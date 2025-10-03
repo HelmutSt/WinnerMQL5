@@ -14,9 +14,7 @@
 #define M3 1
 #define H1 2
 #define D1 3
-
 #define lfd 0
-
 
 //+------------------------------------------------------------------+
 //| Global Variables                                                 |
@@ -36,9 +34,9 @@ struct strucBar
 strucBar bar[4,4];
 int barMax = 4;
 
-
 struct dreierStruct
   {
+   long              id;
    datetime          time;         // Anfangszeit
    double            level;        // Level
    double            pkt1;         // Punkte 1
@@ -46,8 +44,24 @@ struct dreierStruct
    string            status;       // off, ang, tkp, kpt, fake, aus
   };
 dreierStruct dreier[100];
+int dreierMax = 0;
+
+struct rangeStruct
+  {
+   double            price0;       // Unten
+   double            price1;       // Oben
+  };
+rangeStruct range[4];
+
+// --- KOnstanten
+int barBreit[4];
+
+
+string aktullerTrend[4];
+
 
 // --- includes
+#include "Dreier.mqh"
 #include "Bars.mqh"
 #include "Ticks.mqh"
 //+------------------------------------------------------------------+
@@ -58,9 +72,22 @@ int OnInit()
 //--- create timer
 // EventSetTimer(60);
 
+// --- Initialisierung
+   range[M1].price0  = 0; // Range AUS!
+   range[M3].price0  = 0;
+   range[H1].price0  = 0;
+   range[D1].price0  = 0;
+   aktullerTrend[M1] = "L";  // Erstmal falsch wird schnell korrigiert
+   aktullerTrend[M3] = "L";
+   aktullerTrend[H1] = "L";
+   aktullerTrend[D1] = "L";
+   barBreit[M1]      = 60 * 1;   // sek
+   barBreit[M3]      = 60 * 3; 
+   barBreit[H1]      = 60 * 60;
+   barBreit[D1]      = 60 * 60 * 24; 
    BarsArrayInit();
 
-//^--- alte M1-BArs als pseudo ticks durchlaufen lassen
+//--- alte M1-Bars als pseudo ticks durchlaufen lassen
    AlteBarsGenerieren();
 
    return(INIT_SUCCEEDED);
@@ -89,5 +116,25 @@ void OnTick()
 void OnTimer()
   {  };
 
+
+//+------------------------------------------------------------------+
+//| E v e n t s                  |
+//+------------------------------------------------------------------+
+void OnChartEvent(const int id,
+                  const long &lparam,
+                  const double &dparam,
+                  const string &sparam)
+  {
+   if(id == 1001)
+     {BarClose(lparam, dparam, sparam); return;}
+
+   if(id == 1002)
+     {DreierNeu(lparam, dparam, sparam); return;}
+
+//         EventChartCustom(currChart,eventID,lparam,dparam,sparam);
+
+
+   return;
+  };
 
 //+------------------------------------------------------------------+
