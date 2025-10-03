@@ -1,0 +1,23 @@
+[33mcommit f540e07680d56364c9e9920e8de99ecf1d581689[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Helmut Stallmann <mail@HelmutStallmann.de>
+Date:   Fri Oct 3 13:41:35 2025 +0200
+
+    Änderung vom Köln am 2025-10-03 13:41
+
+[33mcommit 0c550f5920d81324bdf4e6be57076700c9d9f4f0[m
+Author: Helmut Stallmann <mail@HelmutStallmann.de>
+Date:   Fri Oct 3 13:29:15 2025 +0200
+
+    Add .gitignore to exclude build and temp files
+
+[33mcommit 9a841be578d163d9f0c8481d73f39e31c47a48c5[m
+Author: Helmut Stallmann <mail@HelmutStallmann.de>
+Date:   Fri Oct 3 13:13:32 2025 +0200
+
+    Erste Teständerung
+
+[33mcommit 58210cb5a4bc95f4684b0bad09a7d9236f08ef41[m
+Author: Helmut Stallmann <mail@HelmutStallmann.de>
+Date:   Fri Oct 3 13:00:53 2025 +0200
+
+    Erster Versuch
