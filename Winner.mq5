@@ -37,7 +37,7 @@ struct strucBar
 strucBar bar[4,4];
 
 
-struct dreier
+struct dreierStruct
   {
    datetime          time;         // Anfangszeit 
    double            level;        // Level
@@ -45,7 +45,7 @@ struct dreier
    double            richtung;     // "L" oder "S"
    string            status;       // off, ang, tkp, kpt, fake, aus
   };
-
+dreierStruct dreier[100];
 
 //+------------------------------------------------------------------+
 //| Expert initialization function                                   |
