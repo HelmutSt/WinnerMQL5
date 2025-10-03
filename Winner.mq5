@@ -35,8 +35,16 @@ struct strucBar
    long              volume;       // volumen
   };
 strucBar bar[4,4];
-// --- time frames
 
+
+struct dreier
+  {
+   datetime          time;         // Anfangszeit 
+   double            level;        // Level
+   double            pkt1;         // Punkte 1
+   double            richtung;     // "L" oder "S"
+   string            status;       // off, ang, tkp, kpt, fake, aus
+  };
 
 
 //+------------------------------------------------------------------+
