@@ -15,6 +15,9 @@
 #define H1 2
 #define D1 3
 #define lfd 0
+#define BarCloseId 1
+#define DreierNeuId 2
+#define DreierKaputtId 3
 
 //+------------------------------------------------------------------+
 //| Global Variables                                                 |
@@ -36,11 +39,14 @@ int barMax = 4;
 
 struct dreierStruct
   {
+   int               timeFrame;
+   long              idx;
    long              id;
+   string            typ;          // H1; H1Kont; TBvEZ; H1Tang; M3Tang; Fake; 
    datetime          time;         // Anfangszeit
    double            level;        // Level
    double            pkt1;         // Punkte 1
-   double            richtung;     // "L" oder "S"
+   string            richtung;     // "L" oder "S"
    string            status;       // off, ang, tkp, kpt, fake, aus
   };
 dreierStruct dreier[100];
@@ -56,9 +62,10 @@ rangeStruct range[4];
 // --- KOnstanten
 int barBreit[4];
 
-
+// --- Situation aktuell
 string aktullerTrend[4];
-
+bool   dreierLongMoeglich[4];
+bool   dreierShortMoeglich[4];
 
 // --- includes
 #include "Dreier.mqh"
@@ -73,18 +80,17 @@ int OnInit()
 // EventSetTimer(60);
 
 // --- Initialisierung
-   range[M1].price0  = 0; // Range AUS!
-   range[M3].price0  = 0;
-   range[H1].price0  = 0;
-   range[D1].price0  = 0;
-   aktullerTrend[M1] = "L";  // Erstmal falsch wird schnell korrigiert
-   aktullerTrend[M3] = "L";
-   aktullerTrend[H1] = "L";
-   aktullerTrend[D1] = "L";
+   for(int timeFrame=0;timeFrame<4;timeFrame++)
+     {
+      range[timeFrame].price0  = 0; // Range AUS!
+      aktullerTrend[timeFrame] = "L";  // Erstmal falsch wird schnell korrigiert
+      dreierLongMoeglich[timeFrame] = true;
+      dreierShortMoeglich[timeFrame] = true;;
+     };
    barBreit[M1]      = 60 * 1;   // sek
-   barBreit[M3]      = 60 * 3; 
+   barBreit[M3]      = 60 * 3;
    barBreit[H1]      = 60 * 60;
-   barBreit[D1]      = 60 * 60 * 24; 
+   barBreit[D1]      = 60 * 60 * 24;
    BarsArrayInit();
 
 //--- alte M1-Bars als pseudo ticks durchlaufen lassen
@@ -127,11 +133,13 @@ void OnChartEvent(const int id,
   {
    if(id == 1001)
      {BarClose(lparam, dparam, sparam); return;}
-
    if(id == 1002)
      {DreierNeu(lparam, dparam, sparam); return;}
+   if(id == 1003)
+     {DreierKaputt(lparam, dparam, sparam); return;}
 
-//         EventChartCustom(currChart,eventID,lparam,dparam,sparam);
+
+//         EventChartCustom(ChartID(),eventID,lparam,dparam,sparam);
 
 
    return;
