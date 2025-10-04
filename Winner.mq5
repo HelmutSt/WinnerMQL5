@@ -42,14 +42,17 @@ struct dreierStruct
    int               timeFrame;
    long              idx;
    long              id;
-   string            typ;          // H1; H1Kont; TBvEZ; H1Tang; M3Tang; Fake; 
+   string            typ;          // H1; H1Kont; TBvEZ; H1Tang; M3Tang; Fake;
    datetime          time;         // Anfangszeit
    double            level;        // Level
    double            pkt1;         // Punkte 1
    string            richtung;     // "L" oder "S"
    string            status;       // off, ang, tkp, kpt, fake, aus
+   // Trendbruch Nein, Ja
+   // aktuell Relevant Ja, Nein
+   bool              sdB;
   };
-dreierStruct dreier[100];
+dreierStruct dreier[1000];
 int dreierMax = 0;
 
 struct rangeStruct
@@ -60,7 +63,8 @@ struct rangeStruct
 rangeStruct range[4];
 
 // --- KOnstanten
-int barBreit[4];
+int    barBreit[4];
+string timeFrameName[4];
 
 // --- Situation aktuell
 string aktullerTrend[4];
@@ -78,7 +82,8 @@ int OnInit()
   {
 //--- create timer
 // EventSetTimer(60);
-
+   ChartSetInteger(0,CHART_EVENT_OBJECT_CREATE,1);
+   ChartSetInteger(0,CHART_EVENT_OBJECT_DELETE,1);
 // --- Initialisierung
    for(int timeFrame=0;timeFrame<4;timeFrame++)
      {
@@ -87,6 +92,10 @@ int OnInit()
       dreierLongMoeglich[timeFrame] = true;
       dreierShortMoeglich[timeFrame] = true;;
      };
+   timeFrameName[M1] = "M1";
+   timeFrameName[M3] = "M3";
+   timeFrameName[H1] = "H1";
+   timeFrameName[D1] = "D1";
    barBreit[M1]      = 60 * 1;   // sek
    barBreit[M3]      = 60 * 3;
    barBreit[H1]      = 60 * 60;
@@ -94,8 +103,18 @@ int OnInit()
    BarsArrayInit();
 
 //--- alte M1-Bars als pseudo ticks durchlaufen lassen
-   AlteBarsGenerieren();
+   TicksGenerieren();
+   
+   
+   for(int dreierIdx=0;dreierIdx<dreierMax;dreierIdx++)
+     {
+     if(dreier[dreierIdx].timeFrame == M3)
+      DreierZeichnen(dreierIdx);
+     };
 
+   
+      EventSetTimer(2);
+Print(" --------- E N D E    O I N I T ---- ");
    return(INIT_SUCCEEDED);
   }
 //+------------------------------------------------------------------+
@@ -120,7 +139,8 @@ void OnTick()
 //| Timer function                                                   |
 //+------------------------------------------------------------------+
 void OnTimer()
-  {  };
+  {      ChartRedraw();   //EventKillTimer();
+   };
 
 
 //+------------------------------------------------------------------+
@@ -131,15 +151,22 @@ void OnChartEvent(const int id,
                   const double &dparam,
                   const string &sparam)
   {
-   if(id == 1001)
-     {BarClose(lparam, dparam, sparam); return;}
-   if(id == 1002)
-     {DreierNeu(lparam, dparam, sparam); return;}
-   if(id == 1003)
-     {DreierKaputt(lparam, dparam, sparam); return;}
-
-
 //         EventChartCustom(ChartID(),eventID,lparam,dparam,sparam);
+
+   if(id ==CHARTEVENT_OBJECT_CREATE)
+   {
+      if(StringSubstr(sparam,0,3) == "M3L")
+      {
+       ObjectSetInteger(0,sparam,OBJPROP_COLOR,clrGreen);
+       ObjectSetInteger(0,sparam,OBJPROP_WIDTH,2);
+      }
+    if(StringSubstr(sparam,0,3) == "M3S")
+      {
+       ObjectSetInteger(0,sparam,OBJPROP_COLOR,clrRed);
+       ObjectSetInteger(0,sparam,OBJPROP_WIDTH,2);
+      }
+   }
+
 
 
    return;
