@@ -1,17 +1,24 @@
-# /bin/bash
+#!/bin/bash
 
-# Ort manuell setzen
-ORT="Köln"  # oder "Düsseldorf"
-
-# Aktuelles Datum holen
 DATUM=$(date +"%Y-%m-%d %H:%M")
 
-# Nachricht übergeben oder Standard verwenden
-if [ -z "$1" ]; then
-  MESSAGE="Änderung vom $ORT am $DATUM"
+# Nachricht vorbereiten
+DEFAULT_MESSAGE="Änderung am $DATUM"
+
+# Benutzer fragen
+read -p "Commit-Nachricht verwenden: '$DEFAULT_MESSAGE'? [J/n] " antwort
+
+if [[ "$antwort" =~ ^[Nn] ]]; then
+  read -p "Bitte eigene Commit-Nachricht eingeben: " benutzer_msg
+  MESSAGE="$benutzer_msg – am $DATUM"
 else
-  MESSAGE="$1 – $ORT am $DATUM"
+  MESSAGE="$DEFAULT_MESSAGE"
 fi
+
+# Git-Befehle ausführen
+git add .
+git commit -m "$MESSAGE"
+git push
 
 # Git-Befehle ausführen
 git add .
