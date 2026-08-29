@@ -289,6 +289,10 @@ private:
          tr.currentTPPrice = tr.fillPrice + tr.tpPoints;   // tp = Distanz
       else
          tr.currentTPPrice = tr.fillPrice - tr.tpPoints;
+
+      // initial* = unveränderlicher Ursprungswert bei Fill (current* wird später vom Positionsmanagement verändert)
+      tr.initialSLPrice = tr.currentSLPrice;
+      tr.initialTPPrice = tr.currentTPPrice;
      }
    // ---------------------------------------------------------------------
    void              OnTick_Running(const MqlTick &t, structTrade &tr)
