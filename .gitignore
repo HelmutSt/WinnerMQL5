@@ -1,0 +1,14 @@
+# Kompilate (werden aus den .mq5/.mqh neu gebaut)
+*.ex5
+*.ex4
+
+# MetaEditor Compile-Logs
+*.log
+
+# SQLite Datenbank (liegt im Common-Folder, nicht hier, aber sicherheitshalber)
+*.db
+*.db-journal
+
+# Backups/Editor-Ruinen
+*.bak
+~$*

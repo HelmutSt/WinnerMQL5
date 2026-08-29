@@ -1,0 +1,37 @@
+{
+   "mql.format.enable": true,
+   "mql.format.indentSize": 3,
+   "mql.format.insertSpaces": true,
+   "terminal.integrated.shell.windows": "C:\\Windows\\System32\\cmd.exe",
+   "files.associations": {
+      "*.mq5": "mql",
+      "*.mqh": "mql"
+   },
+   "clang-format.executable": "/absolute/path/to/clang-format",
+   "editor.tabSize": 3,
+   "editor.insertSpaces": true,
+   "editor.detectIndentation": false,
+   "editor.formatOnSave": true,
+   "editor.formatOnPaste": true,
+   "editor.rulers": [
+      120
+   ],
+   "editor.wordWrap": "off",
+   "editor.renderWhitespace": "boundary",
+   "editor.renderControlCharacters": true,
+   "editor.minimap.enabled": false,
+   "files.trimTrailingWhitespace": true,
+   "files.insertFinalNewline": true,
+   "editor.bracketPairColorization.enabled": true,
+   "editor.guides.indentation": true,
+   "search.exclude": {
+      "**/*.ex5": true,
+      "**/*.log": true,
+      "**/Tester/*": true
+   },
+   "files.exclude": {
+      "**/*.ex5": true,
+      "**/*.log": true,
+      "**/Tester/*": true
+   }
+}
