@@ -6,7 +6,7 @@
 - Ziel: Pattern-/Event-Engine zur Regelanalyse und -verfeinerung; erste belastbare Handelsregel finden
 - Zwei EAs teilen sich den Code: `Backtester.mq5` (erzeugt Daten) und `Visualizer.mq5` (zeigt/inspiziert Daten am Chart)
 - Persistenz: SQLite-Datenbank `FDAX.db` im MT5-Common-Folder; Tabellen: market, patternCore, patternDynamic, events, relations, variants, trades, trends
-- **Kein Git-Sicherheitsnetz**: das komplette Verzeichnis `Dreier50` ist nicht unter Versionskontrolle — Änderungen sind nicht rückholbar, daher bei riskanten Aktionen (z. B. Compile eines fehlerhaften Files, das eine bestehende .ex5 löscht) vorher transparent machen
+- Versionskontrolle: eigenes Git-Repo direkt in `Dreier50` (unabhängig vom unaufgeräumten Repo eine Ebene höher unter `MQL5\Experts`), Remote auf GitHub: `https://github.com/HelmutSt/WinnerMQL5` (Branch `main`). Sync zwischen den beiden Arbeitsrechnern (Köln/Düsseldorf) über `git pull`/`git push` statt Dropbox. `.ex5`-Kompilate, die SQLite-DB und Logs sind über `.gitignore` ausgeschlossen und müssen pro Rechner lokal neu erzeugt werden.
 
 ## Pipeline
 Bars → Pattern → Events → Trade. Events sind immer Zustandsänderungen von Pattern (siehe `EventReason`).
@@ -65,9 +65,7 @@ Kernidee: Trade-Entscheidungen werden primär aus der Story (Sequenz vorheriger 
 5. Weitere, story-basierte Regeln
 
 ## Offene Punkte
-- `Visualizer.mq5` hat 7 vorbestehende, unabhängige Compile-Fehler in `LoadAndListTrades` (undeklarierte Felder: `priceDistanceToStart`, `sl`, `tp`, `barsHeld`, `tp1`, `tp2`, `lastBarIndex` — vermutlich Reste einer alten Struct-Version). Dadurch fehlt aktuell ein kompiliertes `Visualizer.ex5`. Entscheidung über Fix-Zeitpunkt steht noch aus.
 - `VRRandERRadd.mqh::VRR_Add`: Parsing von `trailingAbortDistanceList` (Feld 9) nutzt noch eine verworfene `dummyCount`-Variable statt eines echten Counts — nicht im Rahmen des ersten Umbaus angefasst.
-- `sql_create_view` (rule_induction_matrix VIEW, `Structures.mqh`) referenziert Spalten, die im aktuellen Schema nicht mehr existieren (`t.stopLoss`, `t.takeProfit`, `m.volatility`, `m.isNews`, `m.newsImpact`, `m.newsType`). Blockiert den Compile nicht (SQLite prüft VIEW-Spalten nicht beim CREATE), ist aber vor der ersten echten Auswertung zu bereinigen.
 
 ## Zusammenarbeit
 - Kleine, nachvollziehbare Schritte; bei mehrdeutigen Design-Entscheidungen nachfragen statt raten.
