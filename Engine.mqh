@@ -46,7 +46,6 @@ public:
       tradeManager.OnSessionClose();//datetime time, double price
       DatabaseReport();
       DatabaseClose(db);
-
      };
    // ##############################################################################
    void              OnEaTick(MqlTick &t)
@@ -56,7 +55,7 @@ public:
       patternManager.OnTick(t);     // ändert Status
       tradeManager.OnTick(t);       // sim. fill/sl/tp + ändert Status
      };
-
+   // -------------------------------------------------------------------------------------
    void              OnNewBar(structBarBlock &bb)
      {
       Print(">>> OnNewBar: ",EnumToString(bb.timeFrame));
@@ -72,20 +71,18 @@ public:
       patternManager.OnNewBar(bb);  // bildet Pattern - finalisiert tempkaputt
       tradeManager.OnNewBar(bb);
      };
-
+   // -------------------------------------------------------------------------------------
    void              OnPattern(structPattern &p)
      {
       Print(">>> OnPattern: ",EnumToString(p.core.timeFrame)+" "+EnumToString(p.core.type));
      };
-
+   // -------------------------------------------------------------------------------------
    void              OnEvent(structEvent &ev)
      {
       Print(">>> OnEvent: "+EnumToString(ev.patternTF)+" "+EnumToString(ev.patternType)+" "+EnumToString(ev.eventReason));
       eventManager.OnEvent(ev);
       tradeManager.OnEvent(ev);
      }
-
-
    // -------------------------------------------------------------------
    bool              DatabaseOpenAndRebuild(bool clear = false)
      {
@@ -151,7 +148,6 @@ public:
       create_sql[i++] = t.CreateSQL();
       structTrend  tr;
       create_sql[i++] = tr.CreateSQL();
-
 
       for(int i = 0; i < 8; i++)
         {

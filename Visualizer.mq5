@@ -740,7 +740,7 @@ void LoadAndListRelations(int relationId, int patternId, int eventId)
    Panel_AddField("barsSinceBreak", IntegerToString(rel.barsSinceBreak));
 
 // Räumliche Distanz
-   Panel_AddField("priceDistanceToStart", DoubleToString(rel.priceDistanceToStart, 5));
+   Panel_AddField("priceDistance", DoubleToString(rel.priceDistance, 5));
    Panel_AddField("priceDistanceToBreakLevel", DoubleToString(rel.priceDistanceToBreakLevel, 5));
    Panel_AddField("priceDistanceExtremeBeforeBreak", DoubleToString(rel.priceDistanceExtremeBeforeBreak, 5));
    Panel_AddField("priceDistanceExtremeAfterBreak", DoubleToString(rel.priceDistanceExtremeAfterBreak, 5));
@@ -864,8 +864,8 @@ void LoadAndListTrades(int variantId)
    Panel_AddField("orderType", EnumToString(tr.orderType));
 
    Panel_AddField("entryPrice", DoubleToString(tr.entryPrice, 0));
-   Panel_AddField("sl", DoubleToString(tr.sl, 0));
-   Panel_AddField("tp", DoubleToString(tr.tp, 0));
+   Panel_AddField("initialSLPrice", DoubleToString(tr.initialSLPrice, 0));
+   Panel_AddField("initialTPPrice", DoubleToString(tr.initialTPPrice, 0));
    Panel_AddField("trailingDist", DoubleToString(tr.trailingDist, 0));
 
    Panel_AddField("twoUnitMode", tr.twoUnitMode ? "true" : "false");
@@ -877,15 +877,15 @@ void LoadAndListTrades(int variantId)
    Panel_AddField("mfe", DoubleToString(tr.mfe, 5));
 
    Panel_AddField("exitReason", ExitReasonToString(tr.exitReason));
-   Panel_AddField("barsHeld", IntegerToString(tr.barsHeld));
+   Panel_AddField("barsHeldUntilExit", IntegerToString(tr.barsHeldUntilExit));
 
-   Panel_AddField("tp1", tr.tp1 ? "true" : "false");
-   Panel_AddField("tp2", tr.tp2 ? "true" : "false");
+   Panel_AddField("twoUnitFilled (TP1)", tr.twoUnitFilled ? "true" : "false");
+   Panel_AddField("twoUnitExited (TP2)", tr.twoUnitExited ? "true" : "false");
 
    Panel_AddField("exitPrice", DoubleToString(tr.exitPrice, 5));
    Panel_AddField("exitTime", TimeToString(tr.exitTime));
 
-   Panel_AddField("lastBarIndex", IntegerToString(tr.lastBarIndex));
+   Panel_AddField("exitBarIndex", IntegerToString(tr.exitBarIndex));
   };
 // ####################################################################
 // ### R E N D E R N   ################################################

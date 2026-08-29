@@ -223,8 +223,6 @@ public:
       ev.eventTime  = time;
       ev.eventPrice = price;
 
-      // delme double priceNominal = (p.core.direction == LONG)? p.core.priceHigh : p.core.priceLow;
-
       // Dispatch
       engine.OnEvent(ev);
      };
