@@ -11,6 +11,11 @@
 
 //   DREIER, RANGE, VTH, HAMMERBAR, TANGENTE
 
+// --- TANGENTE-Erkennung: Parameter -------------------------------------
+#define TANGENTE_SWING_N            2   // 5-Bar-Fraktal (N Bars auf jeder Seite)
+#define TANGENTE_MIN_BARS_BETWEEN   5   // Mindestabstand zwischen den beiden Swing-Punkten
+#define TANGENTE_MAX_ACTIVE         3   // max. gleichzeitig aktive Tangenten je TF+Richtung (FIFO)
+
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
@@ -28,10 +33,13 @@ public:
       int               lastHammerBarLongIdx;
       int               lastHammerBarShortIdx;
 
-      int               tang1_OverIdx;
-      int               tang2_OverIdx;
-      int               tang1_UnderIdx;
-      int               tang2_UnderIdx;
+      // TANGENTE: letzter bestätigter Swing-Punkt je Richtung (für Paarbildung mit dem nächsten Swing)
+      double            lastSwingLowPrice;
+      int               lastSwingLowBarIndex;
+      datetime          lastSwingLowTime;
+      double            lastSwingHighPrice;
+      int               lastSwingHighBarIndex;
+      datetime          lastSwingHighTime;
 
       Direction         trendPattern    ;
      };
@@ -85,10 +93,12 @@ public:
          meta[i].lastHammerBarLongIdx  = -1;
          meta[i].lastHammerBarShortIdx = -1;
 
-         meta[i].tang1_OverIdx= -1;
-         meta[i].tang2_OverIdx= -1;
-         meta[i].tang1_UnderIdx= -1;
-         meta[i].tang2_UnderIdx= -1;
+         meta[i].lastSwingLowPrice    = 0.0;
+         meta[i].lastSwingLowBarIndex = -1;
+         meta[i].lastSwingLowTime     = 0;
+         meta[i].lastSwingHighPrice    = 0.0;
+         meta[i].lastSwingHighBarIndex = -1;
+         meta[i].lastSwingHighTime     = 0;
 
 
          meta[i].trendPattern               = LONG;
@@ -1016,67 +1026,143 @@ public:
    //+------------------------------------------------------------------+
    bool              DetectNewTangentePattern(structBarBlock &bb)
      {
-      if(bb.timeFrame != PERIOD_H1)
+      if(bb.timeFrame != PERIOD_M3 && bb.timeFrame != PERIOD_H1)
          return(false);
 
-      int tfIdx = TimeFrameToIndex(bb.timeFrame);
+      int c = TANGENTE_SWING_N + 1;   // Kandidat-Position im Ringpuffer (bars[1]=jüngste abgeschlossene Bar)
 
-      // gibt es einen laufenden?  (wird bei CLOESED auf -1 gesetzt)
-      if(meta[tfIdx ].tang1_UnderIdx == -1)
+      // --- Swing-Low (Kandidat für LONG-Tangente) ---
+      bool isSwingLow = true;
+      for(int k = 1; k <= TANGENTE_SWING_N; k++)
         {
-         // Drei bars mit steigenden Tiefs
-         if((bb.bars[3].low <  bb.bars[2].low) &&
-            (bb.bars[3].low <  bb.bars[1].low))
+         if(bb.bars[c].low >= bb.bars[c-k].low || bb.bars[c].low >= bb.bars[c+k].low)
            {
-            structPattern p;
-            p.Init();
-
-            p.core.patternId   = nextPatternId++;
-            p.core.type        = TANGENTE;
-            p.core.direction   = LONG;
-            p.core.timeFrame   = bb.timeFrame;
-            p.dynamic.status      = OPEN;
-
-            p.core.startTime   = bb.bars[3].time;
-            p.core.endTime     = bb.bars[1].time;
-
-            p.core.validFrom   = bb.bars[1].time;
-            p.core.validUntil  = 0;
-
-            p.core.startBarIndex     = bb.bars[3].barIndex;
-            p.core.validFromBarIndex = bb.bars[1].barIndex;
-            p.dynamic.breakBarIndex     = bb.bars[1].barIndex;
-            p.core.endBarIndex       = bb.bars[1].barIndex;
-
-            p.core.priceLow  = bb.bars[3].low;
-            p.core.priceHigh = bb.bars[3].low + 10;
-            p.core.width     = p.core.priceHigh - p.core.priceLow;
-            p.core.priceSlopePerBar = (bb.bars[1].low - bb.bars[3].low) / 2;
-
-            const structBar barA = bb.bars[3];
-            double bodyA  = MathAbs(barA.close - barA.open);
-            double upperA = barA.high - MathMax(barA.open, barA.close);
-            double lowerA = MathMin(barA.open, barA.close) - barA.low;
-
-            p.core.rangeBarA = barA.high - barA.low;
-            p.core.shapeBarA = barA.shape;
-            p.core.wickRatio = (bodyA > 0 ? (upperA + lowerA) / bodyA : 0);
-
-            const structBar barB = bb.bars[2];
-            p.core.rangeBarB = barB.high - barB.low;
-            p.core.shapeBarB = barB.shape;
-
-            const structBar barC = bb.bars[1];
-            p.core.rangeBarC = barC.high - barC.low;
-            p.core.shapeBarC = barC.shape;
-            SetCommonPatternFields(p);
-            this.Add(p);
+            isSwingLow = false;
+            break;
            }
         }
+      if(isSwingLow)
+         TryFormTangente(bb, LONG, bb.bars[c].low, bb.bars[c].barIndex, bb.bars[c].time);
 
-
+      // --- Swing-High (Kandidat für SHORT-Tangente) ---
+      bool isSwingHigh = true;
+      for(int k = 1; k <= TANGENTE_SWING_N; k++)
+        {
+         if(bb.bars[c].high <= bb.bars[c-k].high || bb.bars[c].high <= bb.bars[c+k].high)
+           {
+            isSwingHigh = false;
+            break;
+           }
+        }
+      if(isSwingHigh)
+         TryFormTangente(bb, SHORT, bb.bars[c].high, bb.bars[c].barIndex, bb.bars[c].time);
 
       return(false);
+     };
+   // ------------------------------------------------------------------
+   // Prüft, ob der neue Swing mit dem zuletzt gespeicherten Swing gleicher
+   // Richtung eine gültige Tangente ergibt, und aktualisiert den Speicher
+   // für die nächste Paarbildung (unabhängig davon, ob eine TANGENTE entsteht).
+   // ------------------------------------------------------------------
+   void              TryFormTangente(structBarBlock &bb, Direction dir,
+                                     double swingPrice, int swingBarIndex, datetime swingTime)
+     {
+      int tfIdx = TimeFrameToIndex(bb.timeFrame);
+
+      double   prevPrice    = (dir == LONG ? meta[tfIdx].lastSwingLowPrice    : meta[tfIdx].lastSwingHighPrice);
+      int      prevBarIndex = (dir == LONG ? meta[tfIdx].lastSwingLowBarIndex : meta[tfIdx].lastSwingHighBarIndex);
+      datetime prevTime     = (dir == LONG ? meta[tfIdx].lastSwingLowTime     : meta[tfIdx].lastSwingHighTime);
+
+      if(prevBarIndex >= 0)
+        {
+         int  barsBetween = swingBarIndex - prevBarIndex;
+         bool slopeOk     = (dir == LONG ? (swingPrice > prevPrice) : (swingPrice < prevPrice));
+
+         if(barsBetween >= TANGENTE_MIN_BARS_BETWEEN && slopeOk)
+            CreateTangente(bb, dir, prevPrice, prevBarIndex, prevTime, swingPrice, swingBarIndex, swingTime);
+        }
+
+      // Swing-Speicher für die nächste Paarbildung aktualisieren
+      if(dir == LONG)
+        {
+         meta[tfIdx].lastSwingLowPrice    = swingPrice;
+         meta[tfIdx].lastSwingLowBarIndex = swingBarIndex;
+         meta[tfIdx].lastSwingLowTime     = swingTime;
+        }
+      else
+        {
+         meta[tfIdx].lastSwingHighPrice    = swingPrice;
+         meta[tfIdx].lastSwingHighBarIndex = swingBarIndex;
+         meta[tfIdx].lastSwingHighTime     = swingTime;
+        }
+     };
+   // ------------------------------------------------------------------
+   void              CreateTangente(structBarBlock &bb, Direction dir,
+                                    double price1, int barIndex1, datetime time1,
+                                    double price2, int barIndex2, datetime time2)
+     {
+      // FIFO-Limit: max. TANGENTE_MAX_ACTIVE gleichzeitig je TF+Richtung,
+      // sonst wird die älteste geschlossen (Verdrängung, kein Preis-Bruch)
+      EvictOldestTangenteIfFull(bb, dir);
+
+      structPattern p;
+      p.Init();
+
+      p.core.patternId  = nextPatternId++;
+      p.core.type       = TANGENTE;
+      p.core.direction  = dir;
+      p.core.timeFrame  = bb.timeFrame;
+      p.dynamic.status  = OPEN;
+
+      // price1/barIndex1/time1 = älterer Swing-Punkt (Ursprung der Linie)
+      // price2/barIndex2/time2 = neuerer Swing-Punkt (bestätigt die Linie)
+      p.core.startTime         = time1;
+      p.core.endTime           = time2;
+      p.core.validFrom         = time2;
+      p.core.validUntil        = 0;
+
+      p.core.startBarIndex     = barIndex1;
+      p.core.validFromBarIndex = barIndex2;
+      p.core.endBarIndex       = barIndex2;
+      p.dynamic.breakBarIndex  = barIndex2;
+
+      // priceLow=priceHigh=price1 (Ursprung), DistanceAndAtr extrapoliert von
+      // startBarIndex aus mit priceSlopePerBar weiter -> ergibt bei barIndex2
+      // wieder price2, danach die laufende Linie
+      p.core.priceLow  = price1;
+      p.core.priceHigh = price1;
+      p.core.width     = 0.0;
+      p.core.priceSlopePerBar = (price2 - price1) / (barIndex2 - barIndex1);
+
+      SetCommonPatternFields(p);
+      this.Add(p);
+     };
+   // ------------------------------------------------------------------
+   // Verdrängt die älteste offene TANGENTE gleicher TF+Richtung, wenn das
+   // Limit TANGENTE_MAX_ACTIVE erreicht ist.
+   // ------------------------------------------------------------------
+   void              EvictOldestTangenteIfFull(structBarBlock &bb, Direction dir)
+     {
+      int oldestIdx = -1;
+      int count     = 0;
+
+      for(int i = 0; i < patternCount; i++)
+        {
+         if(patterns[i].core.type      != TANGENTE)   continue;
+         if(patterns[i].core.timeFrame != bb.timeFrame) continue;
+         if(patterns[i].core.direction != dir)        continue;
+         if(patterns[i].dynamic.status != OPEN)       continue;
+
+         count++;
+         if(oldestIdx == -1 || patterns[i].core.startBarIndex < patterns[oldestIdx].core.startBarIndex)
+            oldestIdx = i;
+        }
+
+      if(count >= TANGENTE_MAX_ACTIVE && oldestIdx != -1)
+        {
+         patterns[oldestIdx].dynamic.status  = CLOSED;
+         patterns[oldestIdx].core.validUntil = bb.bars[1].time;
+        }
      };
    //+------------------------------------------------------------------+
    //|                                                                  |
@@ -1246,7 +1332,6 @@ public:
               {
                p.dynamic.status = CLOSED;
                p.core.validUntil = bb.bars[1].time + bb.periodSec;
-               meta[bb.timeFrame].tang1_OverIdx = -1;
               }
 
             // das kann sein - oder?  p.dynamic.hadFakeBreak = false;

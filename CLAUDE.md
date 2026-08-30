@@ -62,21 +62,20 @@ Pro qualifizierendem Event werden 15 Relations geschrieben (`EventManager.mqh::E
 ## Aktueller Implementierungsstand
 - Abort-nach-X-Bars, `against`-Inversion und volle Variants-Tabelle: implementiert und verifiziert.
 - Grundfelder (events/trades/market/patternCore/patternDynamic) an Live-Daten verifiziert (Phase 2), zwei Bugs dabei gefunden und gefixt: `Visualizer.mq5` (7 veraltete Feldnamen), `structTrade.initialSLPrice/initialTPPrice` (nie gesetzt).
-- Relations auf die echten 15 `relationSlots` umgestellt und verifiziert (Phase 3, `EventManager.mqh::EvaluatePatternForSlots`) — DREIER/VTH/HAMMER_BAR-Slots befüllen sich korrekt.
+- Relations auf die echten 15 `relationSlots` umgestellt und verifiziert (Phase 3, `EventManager.mqh::EvaluatePatternForSlots`) — DREIER/VTH/HAMMER_BAR/TANGENTE-Slots befüllen sich korrekt (D1_NEXT_TANGENTE bleibt strukturell immer leer, TANGENTE kommt nur auf M3/H1 vor).
 - Story (letzte 8–10 Events) ist weiterhin nicht implementiert.
-- **TANGENTE-Erkennung ist ein bewusster Platzhalter** (`PatternManager.mqh`) und wird noch überarbeitet — die TANGENTE-bezogenen Relation-Slots (`H1_NEXT_TANGENTE_*`, `D1_NEXT_TANGENTE_*`) sind erst nach diesem Rework sinnvoll verifizierbar. Auffälligkeiten dort (z. B. nur eine Richtung vorhanden) sind aktuell erwartet, kein Bug.
+- **TANGENTE-Erkennung neu implementiert und verifiziert** (`PatternManager.mqh::DetectNewTangentePattern`/`TryFormTangente`/`CreateTangente`): 5-Bar-Fraktal-Swings, Mindestabstand 5 Bars zwischen den beiden Swing-Punkten (`TANGENTE_MIN_BARS_BETWEEN`), max. 3 gleichzeitig aktive Tangenten je TF+Richtung mit FIFO-Verdrängung (`TANGENTE_MAX_ACTIVE`), Bruch = Close jenseits der extrapolierten Linie über die bestehende `UpdatePatternTouchStates`/`ClearBrokenButNotConfirmed`-Maschinerie (kein Docht-Bruch). Läuft auf M3 und H1, beide Richtungen (LONG=Support/steigende Tiefs, SHORT=Resistance/fallende Hochs).
 - `Backtester.mq5` kompiliert fehlerfrei (0 Errors/0 Warnings).
 
 ## Roadmap (Gesamtplan)
 1. Code sauber ziehen (Varianten generieren, in Tabelle ablegen) — ✅ erledigt
 2. Anhand weniger Datensätze Feldkorrektheit prüfen (Grundfelder) — ✅ erledigt
-3. Alles freischalten, EA über größeren Zeitraum laufen lassen — ⬅ aktuelle Phase (Relations auf 15 Slots umgestellt; Tangenten-Erkennung wird vor der finalen Verifikation noch überarbeitet)
+3. Alles freischalten, EA über größeren Zeitraum laufen lassen — ⬅ aktuelle Phase (Relations auf 15 Slots umgestellt, TANGENTE-Erkennung neu implementiert, beides an Live-Daten verifiziert)
 4. Erste Regelfindung ausgehend von `M3_DREIER_IS_TOUCHED` mit `causedOppositeBreak = true`
 5. Weitere, story-basierte Regeln
 
 ## Offene Punkte
 - `VRRandERRadd.mqh::VRR_Add`: Parsing von `trailingAbortDistanceList` (Feld 9) nutzt noch eine verworfene `dummyCount`-Variable statt eines echten Counts — nicht im Rahmen des ersten Umbaus angefasst.
-- TANGENTE-Erkennungsalgorithmus (`PatternManager.mqh`) muss neu entwickelt werden, bevor TANGENTE-bezogene Relation-Slots final verifiziert werden können.
 
 ## Zusammenarbeit
 - Kleine, nachvollziehbare Schritte; bei mehrdeutigen Design-Entscheidungen nachfragen statt raten.
