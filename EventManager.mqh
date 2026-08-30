@@ -47,39 +47,26 @@ struct structVariantRoutingRule
      }
   };
 
-static string slotNames[26] =
+static string slotNames[15] =
   {
-   "M3_EventOrigin",    //  0  → Pattern, der den Event ausgelöst hat (Trigger)
-   "M3_SoM_Under",      //  1  → SoM unter Event (M3)
-   "M3_SoM_Over",       //  2  → SoM über Event (M3)
-   "M3_Open_Under",     //  3  → Open unter Event (M3)
-   "M3_Open_Over",      //  4  → Open über Event (M3)
+   "M3_EventOrigin",           //  0  → Pattern, der den Event ausgelöst hat (Trigger)
 
-   "M3_Tang1_Under",    //  5  → Tangente 1 unter Event (M3)
-   "M3_Tang1_Over",     //  6  → Tangente 1 über Event (M3)
-   "M3_Tang2_Under",    //  7  → Tangente 2 unter Event (M3)
-   "M3_Tang2_Over",     //  8  → Tangente 2 über Event (M3)
+   "M3_Last_SoM_SHORT",        //  1  → zeitlich letztes M3-SoM-Pattern, direction==SHORT
+   "M3_Last_DREIER_SHORT",     //  2  → zeitlich letzter M3-DREIER, direction==SHORT
+   "M3_Last_HAMMER_BAR_SHORT", //  3  → zeitlich letzter M3-HAMMER_BAR, direction==SHORT
+   "M3_Last_HAMMER_BAR_LONG",  //  4  → zeitlich letzter M3-HAMMER_BAR, direction==LONG
+   "M3_Last_DREIER_LONG",      //  5  → zeitlich letzter M3-DREIER, direction==LONG
+   "M3_Last_SoM_LONG",         //  6  → zeitlich letztes M3-SoM-Pattern, direction==LONG
 
-   "H1_Dreier_Near",    //  9  → nächster DREIER im H1
-   "H1_SoM_Under",      // 10  → SoM unter Event (H1)
-   "H1_SoM_Over",       // 11  → SoM über Event (H1)
-   "H1_Open_Under",     // 12  → Open unter Event (H1)
-   "H1_Open_Over",      // 13  → Open über Event (H1)
+   "H1_NEXT_DREIER_SHORT",     //  7  → räumlich nächster H1-DREIER, direction==SHORT
+   "H1_NEXT_VTH_SHORT",        //  8  → räumlich nächstes H1-VTH, direction==SHORT
+   "H1_NEXT_TANGENTE_SHORT",   //  9  → räumlich nächste H1-TANGENTE, direction==SHORT
+   "H1_NEXT_DREIER_LONG",      // 10  → räumlich nächster H1-DREIER, direction==LONG
+   "H1_NEXT_VTH_LONG",         // 11  → räumlich nächstes H1-VTH, direction==LONG
+   "H1_NEXT_TANGENTE_LONG",    // 12  → räumlich nächste H1-TANGENTE, direction==LONG
 
-   "H1_Tang1_Under",    // 14  → Tangente 1 unter Event (H1)
-   "H1_Tang1_Over",     // 15  → Tangente 1 über Event (H1)
-   "H1_Tang2_Under",    // 16  → Tangente 2 unter Event (H1)
-   "H1_Tang2_Over",     // 17  → Tangente 2 über Event (H1)
-
-   "D1_VTH1_Under",     // 18  → VTH1 unter Event (D1)
-   "D1_VTH1_Over",      // 19  → VTH1 über Event (D1)
-   "D1_VTH2_Under",     // 20  → VTH2 unter Event (D1)
-   "D1_VTH2_Over",      // 21  → VTH2 über Event (D1)
-
-   "D1_Tang1_Under",    // 22  → Tangente 1 unter Event (D1)
-   "D1_Tang1_Over",     // 23  → Tangente 1 über Event (D1)
-   "D1_Tang2_Under",    // 24  → Tangente 2 unter Event (D1)
-   "D1_Tang2_Over"      // 25  → Tangente 2 über Event (D1)
+   "D1_NEXT_TANGENTE_SHORT",   // 13  → räumlich nächste D1-TANGENTE, direction==SHORT
+   "D1_NEXT_TANGENTE_LONG"     // 14  → räumlich nächste D1-TANGENTE, direction==LONG
   };
 //+------------------------------------------------------------------+
 class CEventManager
@@ -102,7 +89,7 @@ private:
       string         slotName;
      };
 
-   structRelation        relations[26];
+   structRelation        relations[15];
 
 
 public:
@@ -186,10 +173,8 @@ private:
    void              BuildRelationsListForEvent(const structEvent &ev)
      {
 
-      int tfIdx = TimeFrameToIndex(PERIOD_M3);
-
       // Liste der relations initialisieren
-      for(int i=0; i<26; i++)
+      for(int i=0; i<15; i++)
         {
          relations[i].Init();
          //
@@ -200,45 +185,28 @@ private:
          relations[i].priceDistance = DBL_MAX; // für suche nach nahestem
         }
 
-      // erstmal nur die patternId suchen und in Liste schreiben
-
       // Slot 0: M3-Origin setzen
       if(ev.patternId != -1)
         {
          relations[0].patternId = ev.patternId;
          relations[0].priceDistance = 0;
         }
-return; //TODO
-      // Tangenten in allen TF sind in den Pattern Meta Daten gespeicher
-      relations[5].patternId = patternManager.meta[TimeFrameToIndex(PERIOD_M3)].tang1_UnderIdx;//  5  → Tangente 1 unter Event (M3)
-      relations[6].patternId = patternManager.meta[TimeFrameToIndex(PERIOD_M3)].tang1_OverIdx; //  6  → Tangente 1 über Event (M3)
-      relations[7].patternId = patternManager.meta[TimeFrameToIndex(PERIOD_M3)].tang2_UnderIdx;//  7  → Tangente 2 unter Event (M3)
-      relations[8].patternId = patternManager.meta[TimeFrameToIndex(PERIOD_M3)].tang2_OverIdx; //  8  → Tangente 2 über Event (M3)
 
-      relations[14].patternId = patternManager.meta[TimeFrameToIndex(PERIOD_H1)].tang1_UnderIdx;// 14  → Tangente 1 unter Event (H1)
-      relations[15].patternId = patternManager.meta[TimeFrameToIndex(PERIOD_H1)].tang1_OverIdx; // 15  → Tangente 1 über Event (H1)
-      relations[16].patternId = patternManager.meta[TimeFrameToIndex(PERIOD_H1)].tang1_UnderIdx;// 16  → Tangente 2 unter Event (H1)
-      relations[17].patternId = patternManager.meta[TimeFrameToIndex(PERIOD_H1)].tang1_OverIdx; // 17  → Tangente 2 über Event (H1)
-
-      relations[22].patternId = patternManager.meta[TimeFrameToIndex(PERIOD_D1)].tang1_UnderIdx;// 22  → Tangente 1 unter Event (D1)
-      relations[23].patternId = patternManager.meta[TimeFrameToIndex(PERIOD_D1)].tang1_OverIdx; // 23  → Tangente 1 über Event (D1)
-      relations[24].patternId = patternManager.meta[TimeFrameToIndex(PERIOD_D1)].tang1_UnderIdx;// 24  → Tangente 2 unter Event (D1)
-      relations[25].patternId = patternManager.meta[TimeFrameToIndex(PERIOD_D1)].tang1_OverIdx; // 25  → Tangente 2 über Event (D1)
-
-      // 3. DREIER und VTH  über Patterns-Array suchen
+      // Slots 1-14: rückwärts über alle bisher bekannten Patterns
+      // (patternId steigt mit Erzeugungszeitpunkt -> absteigend iterieren = zeitlich rückwärts,
+      //  wichtig für die "Last"-Slots: erster Treffer je Slot ist automatisch der zeitlich letzte)
       int patternCount = patternManager.GetCount();
-      for(int i = patternCount; i > 0 ; i--)
+      for(int i = patternCount - 1; i >= 0; i--)
         {
-         // suchen und eintragen der patternId und der distance
          structPattern p = patternManager.Get(i);
-         FillDreierAndVthSlots(ev, p);
+         EvaluatePatternForSlots(ev, p);
         };
      }; // end sub
    // -----------------------------------------------------
    void              FillRelationsListForEvent(structEvent &ev)
      {
       // Liste der relations mit Daten füllen und ausgeben
-      for(int i=0; i<26; i++)
+      for(int i=0; i<15; i++)
         {
          structRelation rel = relations[i];
          FillRelationSlot(rel, ev);
@@ -246,192 +214,89 @@ return; //TODO
         };
      }; // end sub
    // -----------------------------------------------------
-   void              FillDreierAndVthSlots(const structEvent &ev, const structPattern &p)
+   // Slot füllen, wenn noch leer (relIdx zählt als "leer" bei priceDistance==DBL_MAX)
+   void              SetIfEmpty(int relIdx, int patternId, double distance)
+     {
+      if(relations[relIdx].priceDistance == DBL_MAX)
+        {
+         relations[relIdx].patternId     = patternId;
+         relations[relIdx].priceDistance = distance;
+        }
+     }
+   // Slot mit dem räumlich nächsten Pattern belegen (kleinste priceDistance gewinnt)
+   void              SetIfNearer(int relIdx, int patternId, double distance)
+     {
+      if(distance < relations[relIdx].priceDistance)
+        {
+         relations[relIdx].patternId     = patternId;
+         relations[relIdx].priceDistance = distance;
+        }
+     }
+   // ------------------------------------------------
+   // Prüft ein einzelnes Pattern gegen alle 14 Nicht-Origin-Slots (1-14).
+   // Wird absteigend nach patternId (= zeitlich rückwärts) aufgerufen:
+   // M3-Slots (1-6, "Last")   -> erster Treffer je Slot ist automatisch der zeitlich letzte (SetIfEmpty)
+   // H1/D1-Slots (7-14, "Next") -> räumlich nächster gewinnt, unabhängig von der Aufrufreihenfolge (SetIfNearer)
+   // ------------------------------------------------
+   void              EvaluatePatternForSlots(const structEvent &ev, const structPattern &p)
      {
       // Origin-Slot überspringen
       if(p.core.patternId == relations[0].patternId)
          return;
 
-      // Geschlossene Patterns ignorieren
-      if(p.dynamic.status == CLOSED)
+      // Richtungslose Patterns können keinem SHORT/LONG-Slot zugeordnet werden
+      if(p.core.direction != LONG && p.core.direction != SHORT)
          return;
 
+      bool isShort = (p.core.direction == SHORT);
+
       // ---------------------------------------------------------
-      // Räumliche Distanz korrekt berechnen
+      // Räumliche Distanz (für "Next"-Slots und zur Doku bei "Last"-Slots)
       // ---------------------------------------------------------
       double startPrice   = 0.0;
       double nominalPrice = 0.0;
       double atr          = 0.0;
 
       DistanceAndAtr(p, startPrice, nominalPrice, atr);
-
-      // Distanz IMMER absolut
       double distance = MathAbs(startPrice - ev.eventPrice);
 
-      // Lage bestimmen
-      bool isUnder = (startPrice < ev.eventPrice);
-      bool isOver  = (startPrice > ev.eventPrice);
-
-      int relIdx = 0;
-
       // ---------------------------------------------------------
-      // M3 – DREIER
+      // M3 – "Last" Slots (1-6): zeitlich letztes Pattern je Typ+Richtung
       // ---------------------------------------------------------
-      if(p.core.type == DREIER && p.core.timeFrame == PERIOD_M3)
+      if(p.core.timeFrame == PERIOD_M3)
         {
-         // SoM
          if(p.dynamic.isStartOfMove)
-           {
-            // M3_SoM_Under (Slot 1)
-            relIdx = 1;
-            if(isUnder && distance < relations[relIdx].priceDistance)
-              {
-               relations[relIdx].patternId    = p.core.patternId;
-               relations[relIdx].priceDistance = distance;
-               return;
-              }
+            SetIfEmpty(isShort ? 1 : 6, p.core.patternId, distance);   // M3_Last_SoM_SHORT/LONG
 
-            // M3_SoM_Over (Slot 2)
-            relIdx = 2;
-            if(isOver && distance < relations[relIdx].priceDistance)
-              {
-               relations[relIdx].patternId    = p.core.patternId;
-               relations[relIdx].priceDistance = distance;
-               return;
-              }
-           }
+         if(p.core.type == DREIER)
+            SetIfEmpty(isShort ? 2 : 5, p.core.patternId, distance);   // M3_Last_DREIER_SHORT/LONG
 
-         // M3_Open_Under (Slot 3)
-         relIdx = 3;
-         if(isUnder && distance < relations[relIdx].priceDistance)
-           {
-            relations[relIdx].patternId    = p.core.patternId;
-            relations[relIdx].priceDistance = distance;
-            return;
-           }
-
-         // M3_Open_Over (Slot 4)
-         relIdx = 4;
-         if(isOver && distance < relations[relIdx].priceDistance)
-           {
-            relations[relIdx].patternId    = p.core.patternId;
-            relations[relIdx].priceDistance = distance;
-            return;
-           }
+         if(p.core.type == HAMMER_BAR)
+            SetIfEmpty(isShort ? 3 : 4, p.core.patternId, distance);   // M3_Last_HAMMER_BAR_SHORT/LONG
         }
 
       // ---------------------------------------------------------
-      // H1 – DREIER
+      // H1 – "Next" Slots (7-12): räumlich nächstes Pattern je Typ+Richtung
+      // (auch geschlossene Patterns bleiben als Preis-Level relevant, z.B. gebrochener
+      //  Widerstand als neue Unterstützung)
       // ---------------------------------------------------------
-      if(p.core.type == DREIER && p.core.timeFrame == PERIOD_H1)
+      if(p.core.timeFrame == PERIOD_H1)
         {
-         // H1_Dreier_Near (Slot 9) — Inside
-         if(ev.eventPrice >= p.core.priceLow && ev.eventPrice <= p.core.priceHigh)
-           {
-            relIdx = 9;
-            relations[relIdx].patternId = p.core.patternId;
-            relations[relIdx].priceDistance = 0.0;
-            return;
-           }
+         if(p.core.type == DREIER)
+            SetIfNearer(isShort ? 7 : 10, p.core.patternId, distance);  // H1_NEXT_DREIER_SHORT/LONG
 
-         // SoM
-         if(p.dynamic.isStartOfMove)
-           {
-            // H1_SoM_Under (Slot 10)
-            relIdx = 10;
-            if(isUnder && distance < relations[relIdx].priceDistance)
-              {
-               relations[relIdx].patternId    = p.core.patternId;
-               relations[relIdx].priceDistance = distance;
-               return;
-              }
+         if(p.core.type == VTH)
+            SetIfNearer(isShort ? 8 : 11, p.core.patternId, distance);  // H1_NEXT_VTH_SHORT/LONG
 
-            // H1_SoM_Over (Slot 11)
-            relIdx = 11;
-            if(isOver && distance < relations[relIdx].priceDistance)
-              {
-               relations[relIdx].patternId    = p.core.patternId;
-               relations[relIdx].priceDistance = distance;
-               return;
-              }
-           }
-
-         // H1_Open_Under (Slot 12)
-         relIdx = 12;
-         if(isUnder && distance < relations[relIdx].priceDistance)
-           {
-            relations[relIdx].patternId    = p.core.patternId;
-            relations[relIdx].priceDistance = distance;
-            return;
-           }
-
-         // H1_Open_Over (Slot 13)
-         relIdx = 13;
-         if(isOver && distance < relations[relIdx].priceDistance)
-           {
-            relations[relIdx].patternId    = p.core.patternId;
-            relations[relIdx].priceDistance = distance;
-            return;
-           }
+         if(p.core.type == TANGENTE)
+            SetIfNearer(isShort ? 9 : 12, p.core.patternId, distance);  // H1_NEXT_TANGENTE_SHORT/LONG
         }
 
       // ---------------------------------------------------------
-      // VTH
+      // D1 – "Next" Slots (13-14): räumlich nächste Tangente je Richtung
       // ---------------------------------------------------------
-      if(p.core.type == VTH)
-        {
-         // -----------------------------
-         // VTH unter Event
-         // -----------------------------
-         if(isUnder)
-           {
-            // VTH1_Under (Slot 18)
-            if(distance < relations[18].priceDistance)
-              {
-               relations[20] = relations[18]; // alter VTH1 → VTH2
-
-               relations[18].patternId    = p.core.patternId;
-               relations[18].priceDistance = distance;
-               relations[18].slotName     = slotNames[18];
-               return;
-              }
-
-            // VTH2_Under (Slot 20)
-            if(distance < relations[20].priceDistance)
-              {
-               relations[20].patternId    = p.core.patternId;
-               relations[20].priceDistance = distance;
-               relations[20].slotName     = slotNames[20];
-               return;
-              }
-           }
-
-         // -----------------------------
-         // VTH über Event
-         // -----------------------------
-         if(isOver)
-           {
-            // VTH1_Over (Slot 19)
-            if(distance < relations[19].priceDistance)
-              {
-               relations[21] = relations[19]; // alter VTH1 → VTH2
-
-               relations[19].patternId    = p.core.patternId;
-               relations[19].priceDistance = distance;
-               relations[19].slotName     = slotNames[19];
-               return;
-              }
-
-            // VTH2_Over (Slot 21)
-            if(distance < relations[21].priceDistance)
-              {
-               relations[21].patternId    = p.core.patternId;
-               relations[21].priceDistance = distance;
-               relations[21].slotName     = slotNames[21];
-               return;
-              }
-           }
-        }
+      if(p.core.timeFrame == PERIOD_D1 && p.core.type == TANGENTE)
+         SetIfNearer(isShort ? 13 : 14, p.core.patternId, distance);   // D1_NEXT_TANGENTE_SHORT/LONG
      };
    // --------------------------------------------------------------
    void              FillRelationSlot(structRelation &r, const structEvent &ev)
