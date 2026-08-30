@@ -892,9 +892,6 @@ void LoadAndListTrades(int variantId)
 // ####################################################################
 void RenderPatternCore(const structPatternCore &pc)
   {
-   if(pc.timeFrame != PERIOD_M3)
-      return ;
-
    RenderRequest r;
    r.Init();
 
@@ -991,6 +988,26 @@ void RenderPatternCore(const structPatternCore &pc)
          r.width  = 3;
          r.clr    = clrGray;
          r.style  = STYLE_SOLID;
+
+         break;
+        }
+
+      // ---------------------------------------------------------
+      // ⭐ TANGENTE (Trendlinie durch die beiden Swing-Punkte)
+      // ---------------------------------------------------------
+      case TANGENTE:
+        {
+         r.type   = OBJ_TREND;
+
+         r.time0  = pc.startTime;
+         r.price0 = pc.priceLow;   // priceLow==priceHigh: Ursprungspreis am älteren Swing
+
+         r.time1  = pc.endTime;
+         r.price1 = pc.priceLow + pc.priceSlopePerBar * (pc.validFromBarIndex - pc.startBarIndex);
+
+         r.clr    = (pc.direction == LONG ? clrLimeGreen : clrRed);
+         r.width  = 1;
+         r.style  = STYLE_DASH;
 
          break;
         }
@@ -1413,36 +1430,18 @@ void Panel_Scroll(int delta)
 //+------------------------------------------------------------------+
 int CreateTrendWindow()
   {
-// Force Index Indikator erzeugen
-   int handle = iForce(
-                   _Symbol,       // aktuelles Symbol
-                   PERIOD_CURRENT,// aktueller Timeframe
-                   13,MODE_SMA,VOLUME_TICK
-                );
+// Trendbänder werden als eigene Chart-Objekte gezeichnet (DrawTrendSegment),
+// dafür reicht ein leeres Subfenster - kein Indikator nötig.
+// Eigenes Fenster ans Ende anhängen (nicht Fenster 1 annehmen - das könnte
+// bereits von der nativen "Show Volumes"-Anzeige belegt sein, deren
+// Wertebereich unsere Bänder am Boden zusammenquetschen würde).
+   int total    = (int)ChartGetInteger(0, CHART_WINDOWS_TOTAL);
+   int trendWnd = total;
 
-   if(handle == INVALID_HANDLE)
-     {
-      Print("Force Index konnte nicht erzeugt werden.");
-      return(INIT_FAILED);
-     }
+   ChartSetInteger(0, CHART_WINDOWS_TOTAL, total + 1);
+   ChartSetInteger(0, CHART_HEIGHT_IN_PIXELS, trendWnd, 200);
 
-// Indikator dem Chart hinzufügen → erzeugt automatisch ein Subwindow
-   bool ok = ChartIndicatorAdd(0, 1, handle);
-
-   if(!ok)
-     {
-      Print("Force Index konnte nicht zum Chart hinzugefügt werden.");
-      return(INIT_FAILED);
-     }
-
-   Print("Force Index wurde dem Chart hinzugefügt.");
-// Anzahl der Fenster setzen
-   ChartSetInteger(0, CHART_WINDOWS_TOTAL, 2);
-
-// Höhe des Trendfensters setzen
-   ChartSetInteger(0, CHART_HEIGHT_IN_PIXELS, 1, 200);
-
-   return 1;   // Trendfenster ist immer Fenster 1
+   return trendWnd;
   }
 
 //+------------------------------------------------------------------+
@@ -1452,7 +1451,7 @@ void DrawTrendSegment(int wnd, string name, datetime t1, datetime t2, int level,
   {
    color col = (trend == -1 ? clrRed : (trend == 0 ? clrGray : clrGreen));
 
-   ObjectCreate(0, name, OBJ_TREND, 1, t1, level+1, t2, level+1);
+   ObjectCreate(0, name, OBJ_TREND, wnd, t1, level+1, t2, level+1);
    ObjectSetInteger(0, name, OBJPROP_COLOR, col);
    ObjectSetInteger(0, name, OBJPROP_WIDTH, 3);
    ObjectSetInteger(0, name, OBJPROP_RAY_RIGHT, false);
@@ -1478,7 +1477,7 @@ void RenderTrendBands()
 
    for(int i = 0; i < 5; i++)
      {
-      RenderSingleTrendBand(1, names[i], i);
+      RenderSingleTrendBand(wnd, names[i], i);
      }
   }
 //+------------------------------------------------------------------+
