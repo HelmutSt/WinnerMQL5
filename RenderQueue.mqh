@@ -28,6 +28,7 @@ struct RenderRequest
    bool              fill;
    int               width;
    int               zorder;
+   long              timeframes;   // OBJPROP_TIMEFRAMES-Maske; 0 = nicht setzen (Default: alle Perioden)
 
    string            text;
    string            tooltip;
@@ -67,6 +68,7 @@ void Init()
    fill        = false;
    width       = 1;
    zorder      = 0;
+   timeframes  = 0;
 
    text        = "";
    tooltip     = "";
@@ -259,6 +261,17 @@ private:
 
             if(queue[cursor].zorder != 0)
                ObjectSetInteger(0, queue[cursor].name, OBJPROP_ZORDER, queue[cursor].zorder);
+
+            if(queue[cursor].timeframes != 0)
+               ObjectSetInteger(0, queue[cursor].name, OBJPROP_TIMEFRAMES, queue[cursor].timeframes);
+
+            // OBJ_TREND läuft per MT5-Default unendlich nach rechts weiter (RAY_RIGHT=true),
+            // unabhängig von time1 - wir zeichnen aber begrenzte Segmente.
+            if(queue[cursor].type == OBJ_TREND)
+              {
+               ObjectSetInteger(0, queue[cursor].name, OBJPROP_RAY_RIGHT, false);
+               ObjectSetInteger(0, queue[cursor].name, OBJPROP_RAY_LEFT, false);
+              }
 
             if(queue[cursor].text   != "")
                ObjectSetString(0, queue[cursor].name, OBJPROP_TEXT,   queue[cursor].text);

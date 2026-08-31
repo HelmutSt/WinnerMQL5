@@ -327,12 +327,12 @@ public:
          if(last < p.core.priceLow)
            {
             p.dynamic.status = CLOSED;
-            p.core.validUntil = t.time;
+            p.dynamic.validUntil = t.time;
             //   EmitEvent(p, IS_BROKEN, t.time, last);
            }
          if(last > p.core.priceHigh)
             p.dynamic.status = CLOSED;
-         p.core.validUntil = t.time;
+         p.dynamic.validUntil = t.time;
         }
 
       // SHORT-HAMMER
@@ -341,12 +341,12 @@ public:
          if(last > p.core.priceHigh)
            {
             p.dynamic.status = CLOSED;
-            p.core.validUntil = t.time;
+            p.dynamic.validUntil = t.time;
             //   EmitEvent(p, IS_BROKEN, t.time, last);
            }
          if(last < p.core.priceLow)
             p.dynamic.status = CLOSED;
-         p.core.validUntil = t.time;
+         p.dynamic.validUntil = t.time;
         }
 
       return;
@@ -558,8 +558,8 @@ public:
          p.core.startTime = vthLowTime;
          p.core.endTime   = bb.bars[1].time;
 
-         p.core.validFrom  = (dayBar0 * 86400);
-         p.core.validUntil = D'2099.12.31';
+         p.core.validFrom     = (dayBar0 * 86400);
+         p.dynamic.validUntil = D'2099.12.31';
 
          p.core.startBarIndex     = vthLowBarIndex;
          p.core.endBarIndex       = bb.bars[1].barIndex;
@@ -571,6 +571,8 @@ public:
          SetCommonPatternFields(p);
 
          this.Add(p);
+
+         EmitEvent(p, IS_CREATED, bb.bars[1].time, vthLowPrice);
 
          // ============================================================
          // SHORT VTH
@@ -586,8 +588,8 @@ public:
          p.core.startTime = vthHighTime;
          p.core.endTime   = bb.bars[1].time + 3600;
 
-         p.core.validFrom  = (dayBar0 * 86400);
-         p.core.validUntil = D'2099.12.31';
+         p.core.validFrom     = (dayBar0 * 86400);
+         p.dynamic.validUntil = D'2099.12.31';
 
          p.core.startBarIndex     = vthHighBarIndex;
          p.core.endBarIndex       = bb.bars[1].barIndex;
@@ -600,6 +602,8 @@ public:
          SetCommonPatternFields(p);
 
          this.Add(p);
+
+         EmitEvent(p, IS_CREATED, bb.bars[1].time, vthHighPrice);
 
          // --- Reset auf 00:00 des neuen Tages ---
          datetime nextDay = (dayBar0 * 86400);
@@ -664,8 +668,8 @@ public:
             p.core.startTime   = bb.bars[3].time;
             p.core.endTime     = bb.bars[1].time;
 
-            p.core.validFrom   = bb.bars[0].time;
-            p.core.validUntil  = 0;
+            p.core.validFrom      = bb.bars[0].time;
+            p.dynamic.validUntil  = 0;
 
             p.core.startBarIndex     = bb.bars[3].barIndex;
             p.core.validFromBarIndex = bb.bars[1].barIndex;
@@ -747,8 +751,8 @@ public:
             p.core.startTime   = bb.bars[3].time;
             p.core.endTime     = bb.bars[1].time;
 
-            p.core.validFrom   = bb.bars[0].time;
-            p.core.validUntil  = 0;
+            p.core.validFrom      = bb.bars[0].time;
+            p.dynamic.validUntil  = 0;
 
             p.core.startBarIndex     = bb.bars[3].barIndex;
             p.core.validFromBarIndex = bb.bars[1].barIndex;
@@ -921,7 +925,7 @@ public:
       p.core.startTime       = b1.time; // somStartTime;
       p.core.endTime         = b0.time;
       p.core.validFrom       = b0.time;
-      p.core.validUntil      = b0.time + 3 * bb.periodSec;
+      p.dynamic.validUntil   = b0.time + 3 * bb.periodSec;
 
       p.core.startBarIndex     = b1.barIndex; // somStartBarIndex;
       p.core.endBarIndex       = b0.barIndex;
@@ -1119,7 +1123,7 @@ public:
       p.core.startTime         = time1;
       p.core.endTime           = time2;
       p.core.validFrom         = time2;
-      p.core.validUntil        = 0;
+      p.dynamic.validUntil     = 0;
 
       p.core.startBarIndex     = barIndex1;
       p.core.validFromBarIndex = barIndex2;
@@ -1136,6 +1140,8 @@ public:
 
       SetCommonPatternFields(p);
       this.Add(p);
+
+      EmitEvent(p, IS_CREATED, time2, price2);
      };
    // ------------------------------------------------------------------
    // Verdrängt die älteste offene TANGENTE gleicher TF+Richtung, wenn das
@@ -1160,8 +1166,8 @@ public:
 
       if(count >= TANGENTE_MAX_ACTIVE && oldestIdx != -1)
         {
-         patterns[oldestIdx].dynamic.status  = CLOSED;
-         patterns[oldestIdx].core.validUntil = bb.bars[1].time;
+         patterns[oldestIdx].dynamic.status     = CLOSED;
+         patterns[oldestIdx].dynamic.validUntil = bb.bars[1].time;
         }
      };
    //+------------------------------------------------------------------+
@@ -1328,11 +1334,7 @@ public:
             p.dynamic.breakBarIndex = bb.bars[0].barIndex;
 
             p.dynamic.status = CLOSED; // BROKEN;    Ausnahme !!!!!
-            if(p.core.type == TANGENTE)
-              {
-               p.dynamic.status = CLOSED;
-               p.core.validUntil = bb.bars[1].time + bb.periodSec;
-              }
+            p.dynamic.validUntil = bb.bars[1].time + bb.periodSec;
 
             // das kann sein - oder?  p.dynamic.hadFakeBreak = false;
 
@@ -1383,7 +1385,7 @@ public:
             // ---------------------------------------------------------
             p.dynamic.hadFakeRetestBreak= false;
             p.dynamic.status = CLOSED;
-            p.core.validUntil = bb.bars[1].time + bb.periodSec;
+            p.dynamic.validUntil = bb.bars[1].time + bb.periodSec;
 
             patterns[i] = p;
             continue;

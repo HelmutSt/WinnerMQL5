@@ -305,17 +305,10 @@ void LoadAndRenderPatterns()
          mostLeftObjectTime = pc.startTime;
 
       // ---------------------------------------------------------
-      // 2) Pattern zeichnen (Core)
-      // ---------------------------------------------------------
-      RenderPatternCore(pc);
-
-      if(pc.type != DREIER)
-         continue;
-
-      // ---------------------------------------------------------
-      // 1) patternDynamic laden (NEUSTER Zustand)
+      // 2) patternDynamic laden (NEUSTER Zustand) - für Break-Status/validUntil
       // ---------------------------------------------------------
       structPatternDynamic pd;
+      pd.Init();
       int patternId, eventId;
 
       string sqlDyn = StringFormat(
@@ -335,9 +328,14 @@ void LoadAndRenderPatterns()
       DatabaseFinalize(stmtDyn);
 
       // ---------------------------------------------------------
-      // 3) isStartOfMove → Pfeil zeichnen
+      // 3) Pattern zeichnen (Core + neuester Dynamic-Zustand)
       // ---------------------------------------------------------
-      if(pd.isStartOfMove)
+      RenderPatternCore(pc, pd);
+
+      // ---------------------------------------------------------
+      // 4) isStartOfMove → Pfeil zeichnen
+      // ---------------------------------------------------------
+      if(pc.type == DREIER && pd.isStartOfMove)
          RenderStartOfMove(pc);
 
      }
@@ -509,6 +507,29 @@ void LoadAndListPatternCore(int patternId)
    DatabaseFinalize(stmt);
 
 // ---------------------------------------------------------
+// patternDynamic laden (NEUSTER Zustand) - für validUntil
+// ---------------------------------------------------------
+   structPatternDynamic pd;
+   pd.Init();
+   int pdPatternId, pdEventId;
+
+   string sqlDyn = StringFormat(
+                      "SELECT * "
+                      "FROM patternDynamic "
+                      "WHERE patternId = %d "
+                      "ORDER BY eventId DESC "
+                      "LIMIT 1;",
+                      patternId
+                   );
+
+   int stmtDyn = DatabasePrepare(db, sqlDyn);
+   if(stmtDyn != INVALID_HANDLE && DatabaseRead(stmtDyn))
+     {
+      pd.LoadFromSQL(stmtDyn, pdEventId, pdPatternId);
+     }
+   DatabaseFinalize(stmtDyn);
+
+// ---------------------------------------------------------
 // Panel füllen
 // ---------------------------------------------------------
    Panel_AddField("PatternCore","",true);
@@ -521,7 +542,7 @@ void LoadAndListPatternCore(int patternId)
    Panel_AddField("startTime", TimeToString(pc.startTime));
    Panel_AddField("endTime", TimeToString(pc.endTime));
    Panel_AddField("validFrom", TimeToString(pc.validFrom));
-   Panel_AddField("validUntil", TimeToString(pc.validUntil));
+   Panel_AddField("validUntil (dynamic)", TimeToString(pd.validUntil));
    Panel_AddField(" "," ");
    Panel_AddField("priceHigh", DoubleToString(pc.priceHigh, 1));
    Panel_AddField("priceLow", DoubleToString(pc.priceLow, 1));
@@ -890,7 +911,7 @@ void LoadAndListTrades(int variantId)
 // ####################################################################
 // ### R E N D E R N   ################################################
 // ####################################################################
-void RenderPatternCore(const structPatternCore &pc)
+void RenderPatternCore(const structPatternCore &pc, const structPatternDynamic &pd)
   {
    RenderRequest r;
    r.Init();
@@ -918,15 +939,27 @@ void RenderPatternCore(const structPatternCore &pc)
          r.time1 = pc.startTime + 3 * PeriodSeconds(pc.timeFrame);
          r.price0 = (pc.direction == LONG ? pc.priceHigh : pc.priceLow);
          r.price1 = r.price0;
-         // Farbe nach Richtung
-         color clr = (pc.direction == LONG ? clrLimeGreen : clrRed);
-         r.clr   = clr;
          r.width =  2;
          r.style = STYLE_SOLID;
+
          if(pc.timeFrame == PERIOD_H1)
            {
-            r.clr   = clrDodgerBlue;
-            r.width =  3;
+            // H1-Chart-Ansicht: Richtungsfarbe
+            RenderRequest rH1 = r;
+            rH1.name       = r.name + "-H1";
+            rH1.clr        = (pc.direction == LONG ? clrLimeGreen : clrRed);
+            rH1.timeframes = OBJ_PERIOD_H1;
+            renderQueue.Add(rH1);
+
+            // M3-Chart-Ansicht: DodgerBlue
+            r.clr        = clrDodgerBlue;
+            r.timeframes = OBJ_PERIOD_M3;
+           }
+         else
+           {
+            // M3-Pattern: nur in M3-Ansicht, Richtungsfarbe
+            r.clr        = (pc.direction == LONG ? clrLimeGreen : clrRed);
+            r.timeframes = OBJ_PERIOD_M1 | OBJ_PERIOD_M3;
            }
          break;
         }
@@ -943,6 +976,7 @@ void RenderPatternCore(const structPatternCore &pc)
          r.width =  1;
          r.style = STYLE_SOLID;
          r.fill   = true;
+         r.timeframes = OBJ_PERIOD_M1 | OBJ_PERIOD_M3;   // nicht in H1-Ansicht
 
          break;
         }
@@ -955,7 +989,7 @@ void RenderPatternCore(const structPatternCore &pc)
          r.type   = OBJ_RECTANGLE;
 
          r.time0  = pc.validFrom;
-         r.time1  = pc.validUntil;
+         r.time1  = (pd.status == CLOSED && pd.validUntil > 0) ? pd.validUntil : TimeCurrent();
 
          r.price0 = pc.priceLow;
          r.price1 = pc.priceHigh;
@@ -977,7 +1011,7 @@ void RenderPatternCore(const structPatternCore &pc)
          r.type   = OBJ_TREND;
 
          r.time0  = pc.validFrom;
-         r.time1  = pc.validUntil;
+         r.time1  = (pd.status == CLOSED && pd.validUntil > 0) ? pd.validUntil : TimeCurrent();
 
          double priceNominal = (pc.direction == LONG ? pc.priceHigh : pc.priceLow);
 
@@ -985,9 +1019,9 @@ void RenderPatternCore(const structPatternCore &pc)
          r.price1 = priceNominal ;
 
          r.fill   = false;
-         r.width  = 3;
-         r.clr    = clrGray;
-         r.style  = STYLE_SOLID;
+         r.width  = 2;
+         r.clr    = clrDarkGray;
+         r.style  = STYLE_DASH;
 
          break;
         }
@@ -1005,9 +1039,28 @@ void RenderPatternCore(const structPatternCore &pc)
          r.time1  = pc.endTime;
          r.price1 = pc.priceLow + pc.priceSlopePerBar * (pc.validFromBarIndex - pc.startBarIndex);
 
-         r.clr    = (pc.direction == LONG ? clrLimeGreen : clrRed);
-         r.width  = 1;
+         r.width  = 2;
          r.style  = STYLE_DASH;
+
+         if(pc.timeFrame == PERIOD_H1)
+           {
+            // H1-Chart-Ansicht: Schwarz
+            RenderRequest rH1 = r;
+            rH1.name       = r.name + "-H1";
+            rH1.clr        = clrBlack;
+            rH1.timeframes = OBJ_PERIOD_H1;
+            renderQueue.Add(rH1);
+
+            // M3-Chart-Ansicht: DodgerBlue
+            r.clr        = clrDodgerBlue;
+            r.timeframes = OBJ_PERIOD_M3;
+           }
+         else
+           {
+            // M3-Pattern: nur in M3-Ansicht, Schwarz
+            r.clr        = clrBlack;
+            r.timeframes = OBJ_PERIOD_M1 | OBJ_PERIOD_M3;
+           }
 
          break;
         }
@@ -1229,6 +1282,7 @@ void RenderTrades(const structTrade &tr)
    ObjectSetInteger(0, name, OBJPROP_COLOR, col);
    ObjectSetInteger(0, name, OBJPROP_WIDTH, 2);
    ObjectSetInteger(0, name, OBJPROP_SELECTABLE, true);
+   ObjectSetInteger(0, name, OBJPROP_TIMEFRAMES, OBJ_PERIOD_M1 | OBJ_PERIOD_M3);   // nicht in H1-Ansicht
 // ---------------------------------------------------------
 // Tooltip
 // ---------------------------------------------------------

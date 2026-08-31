@@ -477,7 +477,6 @@ struct structPatternCore
    datetime          startTime;                     // Zeitpunkt des ersten Bars des Patterns
    datetime          endTime;                       // Zeitpunkt des letzten Bars des Patterns
    datetime          validFrom;                     // Zeitpunkt, ab dem das Pattern gültig ist (Break/Activation)
-   datetime          validUntil;                    // Zeitpunkt, bis wann das Pattern gültig bleibt (Invalidation)
 
    int               startBarIndex;                 // Bar‑Index des Startbars relativ zum Chart
    int               validFromBarIndex;             // Bar‑Index des Validierungsbars (Break/Activation)
@@ -532,7 +531,6 @@ struct structPatternCore
       startTime                        = 0;
       endTime                          = 0;
       validFrom                        = 0;
-      validUntil                       = 0;
 
       startBarIndex                    = -1;
       validFromBarIndex                = -1;
@@ -580,7 +578,7 @@ struct structPatternCore
       return StringFormat(
                 "INSERT INTO patternCore ("
                 "patternId, timeFrame, type, startTime, endTime, "
-                "validFrom, validUntil, "
+                "validFrom, "
                 "startBarIndex, validFromBarIndex, endBarIndex, "
                 "priceLow, priceHigh, width, priceSlopePerBar, "
                 "previousStartPriceRelation, "
@@ -593,7 +591,7 @@ struct structPatternCore
                 "wickRatio, patternStrengthAtCreate"
                 ") VALUES ("
                 "%d, '%s', '%s', %I64d, %I64d, "
-                "%I64d, %I64d, "
+                "%I64d, "
                 "%d, %d, %d, "
                 "%.5f, %.5f, %.5f, %.5f, "
                 "'%s', "
@@ -609,7 +607,7 @@ struct structPatternCore
                 TimeFrameToString(timeFrame),
                 EnumToString(type),
                 (long)startTime, (long)endTime,
-                (long)validFrom, (long)validUntil,
+                (long)validFrom,
                 startBarIndex, validFromBarIndex, endBarIndex,
                 priceLow, priceHigh, width, priceSlopePerBar,
                 EnumToString(previousStartPriceRelation),
@@ -638,7 +636,6 @@ struct structPatternCore
          "startTime INTEGER,"
          "endTime INTEGER,"
          "validFrom INTEGER,"
-         "validUntil INTEGER,"
          "startBarIndex INTEGER,"
          "validFromBarIndex INTEGER,"
          "endBarIndex INTEGER,"
@@ -692,60 +689,57 @@ struct structPatternCore
       DatabaseColumnInteger(stmt, 5, intVal);
       validFrom = (datetime)intVal;
 
-      DatabaseColumnInteger(stmt, 6, intVal);
-      validUntil = (datetime)intVal;
+      DatabaseColumnInteger(stmt, 6, startBarIndex);
+      DatabaseColumnInteger(stmt, 7, validFromBarIndex);
+      DatabaseColumnInteger(stmt, 8, endBarIndex);
 
-      DatabaseColumnInteger(stmt, 7, startBarIndex);
-      DatabaseColumnInteger(stmt, 8, validFromBarIndex);
-      DatabaseColumnInteger(stmt, 9, endBarIndex);
+      DatabaseColumnDouble(stmt, 9, priceLow);
+      DatabaseColumnDouble(stmt, 10, priceHigh);
+      DatabaseColumnDouble(stmt, 11, width);
+      DatabaseColumnDouble(stmt, 12, priceSlopePerBar);
 
-      DatabaseColumnDouble(stmt, 10, priceLow);
-      DatabaseColumnDouble(stmt, 11, priceHigh);
-      DatabaseColumnDouble(stmt, 12, width);
-      DatabaseColumnDouble(stmt, 13, priceSlopePerBar);
-
-      DatabaseColumnText(stmt, 14, temp);
+      DatabaseColumnText(stmt, 13, temp);
       previousStartPriceRelation = StringToPreviousRelation(temp);
 
-      DatabaseColumnInteger(stmt, 15, barsSincePrevious);
+      DatabaseColumnInteger(stmt, 14, barsSincePrevious);
 
-      DatabaseColumnDouble(stmt, 16, priceDeltaToPreviousPattern);
-      DatabaseColumnDouble(stmt, 17, priceOffsetToPreviousPattern);
+      DatabaseColumnDouble(stmt, 15, priceDeltaToPreviousPattern);
+      DatabaseColumnDouble(stmt, 16, priceOffsetToPreviousPattern);
 
-      DatabaseColumnInteger(stmt, 18, intVal);
+      DatabaseColumnInteger(stmt, 17, intVal);
       isOverlapingPrevious = (intVal != 0);
 
-      DatabaseColumnInteger(stmt, 19, intVal);
+      DatabaseColumnInteger(stmt, 18, intVal);
       isInsidePrevious = (intVal != 0);
 
-      DatabaseColumnInteger(stmt, 20, intVal);
+      DatabaseColumnInteger(stmt, 19, intVal);
       isOutsidePrevious = (intVal != 0);
 
-      DatabaseColumnText(stmt, 21, temp);
+      DatabaseColumnText(stmt, 20, temp);
       direction = StringToDirection(temp);
 
-      DatabaseColumnText(stmt, 22, temp);
+      DatabaseColumnText(stmt, 21, temp);
       sessionAtCreate = StringToSessionType(temp);
 
-      DatabaseColumnText(stmt, 23, temp);
+      DatabaseColumnText(stmt, 22, temp);
       trendContextAtCreate = StringToDirection(temp);
 
-      DatabaseColumnText(stmt, 24, temp);
+      DatabaseColumnText(stmt, 23, temp);
       shapeBarA = StringToBarShape(temp);
 
-      DatabaseColumnText(stmt, 25, temp);
+      DatabaseColumnText(stmt, 24, temp);
       shapeBarB = StringToBarShape(temp);
 
-      DatabaseColumnText(stmt, 26, temp);
+      DatabaseColumnText(stmt, 25, temp);
       shapeBarC = StringToBarShape(temp);
 
-      DatabaseColumnDouble(stmt, 27, rangeBarA);
-      DatabaseColumnDouble(stmt, 28, rangeBarB);
-      DatabaseColumnDouble(stmt, 29, rangeBarC);
+      DatabaseColumnDouble(stmt, 26, rangeBarA);
+      DatabaseColumnDouble(stmt, 27, rangeBarB);
+      DatabaseColumnDouble(stmt, 28, rangeBarC);
 
-      DatabaseColumnDouble(stmt, 30, wickRatio);
+      DatabaseColumnDouble(stmt, 29, wickRatio);
 
-      DatabaseColumnDouble(stmt, 31, patternStrengthAtCreate);
+      DatabaseColumnDouble(stmt, 30, patternStrengthAtCreate);
 
       return true;
      }
@@ -759,6 +753,8 @@ struct structPatternDynamic      // last Chance 20.07.2026 — mit BreakTime & b
 
    datetime          breakTime;        // Zeitpunkt des Breaks (aus Sicht dieses Events)
    int               breakBarIndex;    // BarIndex des Breaks (aus Sicht dieses Events)
+
+   datetime          validUntil;       // Zeitpunkt, bis wann das Pattern gültig bleibt (Invalidation) — Lifetime-Fakt, aus patternCore verschoben
 
    int               touches;
    int               nearTouches;
@@ -789,6 +785,8 @@ struct structPatternDynamic      // last Chance 20.07.2026 — mit BreakTime & b
 
       breakTime                      = 0;
       breakBarIndex                  = -1;
+
+      validUntil                     = 0;
 
       touches                        = 0;
       nearTouches                    = 0;
@@ -825,7 +823,8 @@ struct structPatternDynamic      // last Chance 20.07.2026 — mit BreakTime & b
                 "isTrendBreak, isStartOfMove, sequenceSinceStartOfMove, "
                 "hadFakeBreak, hadFakeRetestBreak, causedOppositePatternBreak, "
                 "priceExtremeBeforeBreak, priceExtremeAfterBreak, priceExtremePrevious, "
-                "previousExtremeBeforeBreakPriceRelation"
+                "previousExtremeBeforeBreakPriceRelation, "
+                "validUntil"
                 ") VALUES ("
                 "'%s', %d, %d, "
                 "%I64d, %d, "
@@ -834,7 +833,8 @@ struct structPatternDynamic      // last Chance 20.07.2026 — mit BreakTime & b
                 "%d, %d, %d, "
                 "%d, %d, %d, "
                 "%.5f, %.5f, %.5f, "
-                "'%s'"
+                "'%s', "
+                "%I64d"
                 ");",
                 EnumToString(status),
                 eventId,
@@ -854,7 +854,8 @@ struct structPatternDynamic      // last Chance 20.07.2026 — mit BreakTime & b
                 priceExtremeBeforeBreak,
                 priceExtremeAfterBreak,
                 priceExtremePrevious,
-                EnumToString(previousExtremeBeforeBreakPriceRelation)
+                EnumToString(previousExtremeBeforeBreakPriceRelation),
+                (long)validUntil
              );
      }
 
@@ -890,7 +891,9 @@ struct structPatternDynamic      // last Chance 20.07.2026 — mit BreakTime & b
          "    priceExtremeAfterBreak REAL,"
          "    priceExtremePrevious REAL,"
 
-         "    previousExtremeBeforeBreakPriceRelation TEXT"
+         "    previousExtremeBeforeBreakPriceRelation TEXT,"
+
+         "    validUntil INTEGER"
          ");";
      }
 
@@ -948,6 +951,9 @@ struct structPatternDynamic      // last Chance 20.07.2026 — mit BreakTime & b
       DatabaseColumnText(stmt, 19, temp);
       previousExtremeBeforeBreakPriceRelation =
          StringToPreviousRelation(temp);
+
+      DatabaseColumnInteger(stmt, 20, intVal);
+      validUntil = (datetime)intVal;
 
       return true;
      }
