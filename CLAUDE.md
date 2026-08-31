@@ -68,6 +68,15 @@ Pro qualifizierendem Event werden 15 Relations geschrieben (`EventManager.mqh::E
 - Kein pre-materialisierter "Monster-Join" (Trade+Event+Market+15×Relations+PatternCore/Dynamic+8-10×Story-Events+PatternCore/Dynamic, überschlagen ~1750-2000 Spalten). Stattdessen: Rule Induction läuft direkt über Claude mit SQL-Zugriff auf das normalisierte Schema, mit gezielten, schmalen Queries pro Hypothese.
 - Konsequenz: keine Denormalisierung/Feld-Duplizierung in `relations`/`events` einbauen, um einen Join zu vereinfachen — bewusst verworfen zugunsten von As-of-Queries gegen `patternDynamic` (siehe oben).
 
+## Pattern-Status-Lifecycle (OPEN/BROKEN/CLOSED)
+- Drei Stati (`enum PatternStatus`, EnumDefAndConvert.mqh:43): `OPEN`, `BROKEN`, `CLOSED`. Kritischer Preis: bei LONG-Pattern `priceLow`, bei SHORT-Pattern `priceHigh` — Bruch = Kurs schließt jenseits davon.
+- **Nur zwei Trigger für Statuswechsel**, und zwar nur für **DREIER und VTH**:
+  - `OPEN → BROKEN`: echter Preis-Bruch (`IS_BROKEN`).
+  - `BROKEN → CLOSED`: Postbreak-Retest bricht die (jetzt umgekehrte) Linie ein zweites Mal — "echter BackBreak" (`IS_POSTBREAK_RETEST_BROKEN`). Ein bloßes Antesten ohne Durchbruch (`IS_POSTBREAK_RETEST_TOUCHED`) ändert den Status nicht, das Pattern bleibt BROKEN.
+- **HAMMER_BAR und TANGENTE springen weiterhin direkt `OPEN → CLOSED`** beim echten Bruch — kein BROKEN-Zwischenzustand, kein Postbreak-Retest-Tracking. Fake-Break-Erkennung (`IS_FAKE_BREAK`) bleibt bei allen vier Pattern-Typen unverändert erhalten, läuft dem Bruch-Check immer vorgelagert.
+- **Bewusst verworfen: eine "Verdrängungsregel" (`isVerdraengt`).** Idee war, ein älteres DREIER derselben Richtung+TF automatisch CLOSED/inaktiv zu setzen, sobald ein neueres, gleichgerichtetes DREIER entsteht (z. B. ein LONG-DREIER-Tief, das nie mehr angetestet wird, bevor ein höheres Tief entsteht — siehe Zick-Zack/Aufwärtstrend-Analyse). Verworfen, weil rein spekulativ (keine beobachtete Preis-Aktion, nur eine Vermutung über Relevanz) und zu komplex. Passt auch nicht zur Rule-Induction-Strategie oben: Status soll rein deskriptiv bleiben (was ist faktisch passiert), Relevanz-Bewertung überlässt man der Rule Induction anhand der vollständigen, ungefilterten Daten.
+- **Noch NICHT implementiert.** `UpdatePatternTouchStates()`'s `STATUS: BROKEN`-Zweig (Retest-Touch-Tracking, `priceExtremeAfterBreak`, `IS_POSTBREAK_RETEST_*`-Events) und `ClearBrokenButNotConfirmed()`'s CASE 2 ("echter BackBreak") existieren im Code bereits vollständig, werden aber nie erreicht: CASE 1 (echter Break) setzt den Status heute für alle Pattern-Typen einheitlich direkt auf `CLOSED` statt auf `BROKEN` (Code-Kommentar: `// BROKEN; Ausnahme!!!!`). Nötige Änderung: in `ClearBrokenButNotConfirmed`, CASE 1, für DREIER/VTH auf `status = BROKEN` umstellen statt `CLOSED`; HAMMER_BAR/TANGENTE bleiben bei `CLOSED`.
+
 ## Aktueller Implementierungsstand
 - Abort-nach-X-Bars, `against`-Inversion und volle Variants-Tabelle: implementiert und verifiziert.
 - Grundfelder (events/trades/market/patternCore/patternDynamic) an Live-Daten verifiziert (Phase 2), zwei Bugs dabei gefunden und gefixt: `Visualizer.mq5` (7 veraltete Feldnamen), `structTrade.initialSLPrice/initialTPPrice` (nie gesetzt).
@@ -87,6 +96,8 @@ Pro qualifizierendem Event werden 15 Relations geschrieben (`EventManager.mqh::E
 
 ## Offene Punkte
 - `VRRandERRadd.mqh::VRR_Add`: Parsing von `trailingAbortDistanceList` (Feld 9) nutzt noch eine verworfene `dummyCount`-Variable statt eines echten Counts — nicht im Rahmen des ersten Umbaus angefasst.
+- Pattern-Status-Lifecycle (siehe oben) ist entschieden, aber noch nicht implementiert.
+- **Nächstes Thema (Stand 2026-08-31):** Auswahlregeln für die 14 räumlichen Relation-Slots (`EventManager.mqh::EvaluatePatternForSlots`) sollen diskutiert und verschärft werden — Ausgangsfrage des Users: die Event-Story beschreibt, welche "Züge" passiert sind, aber nicht *wo* auf dem Feld (eigener Strafraum vs. vor dem gegnerischen Tor). User bezog sich auf eine Fußballspieler-Analogie aus einer früheren, in dieser Session nicht sichtbaren Unterhaltung — beim Wiederaufnehmen ggf. nachfragen/erneut zeigen lassen.
 
 ## Zusammenarbeit
 - Kleine, nachvollziehbare Schritte; bei mehrdeutigen Design-Entscheidungen nachfragen statt raten.
