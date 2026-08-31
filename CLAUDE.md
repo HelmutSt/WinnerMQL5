@@ -59,13 +59,24 @@ Pro qualifizierendem Event werden 15 Relations geschrieben (`EventManager.mqh::E
 - `structVariant` wird für jede VRR-Regel als volles kartesisches Produkt (delta × sl × tp × trailing × abortBars) einmalig vorab generiert (`EventManager.mqh::GenerateAllVariants`) und in eigene SQLite-Tabelle `variants` geschrieben (FK von `trades.variantId`).
 - `variantId`-Kodierung: `vrrId*100000 + delta*10000 + sl*1000 + tp*100 + trailing*10 + abortBars` (`ComputeVariantId`).
 
+## patternCore vs. patternDynamic — Feld-Konvention
+- `patternCore` wird **einmalig per INSERT** geschrieben (`ToSQL()` in `Structures.mqh`), nie per UPDATE. Felder gehören hier nur rein, wenn ihr Wert bei Erzeugung feststeht und sich nie mehr ändert (z. B. `startTime`, `direction`, `validFrom`).
+- `patternDynamic` wird bei **jedem** Event einer neuen Zeile hinzugefügt (`p.dynamic.ToSQL(patternId, eventId)`, `EventManager.mqh::OnEvent()`) — auch bei Story-Events, nicht nur bei Entry-Events. Lifetime-Fakten, die sich nach der Erzeugung ändern können (z. B. `status`, `breakTime`, `validUntil`), gehören hierhin.
+- Jeder Pattern-Typ (DREIER, HAMMER_BAR, VTH, TANGENTE) feuert bei Erzeugung `EmitEvent(IS_CREATED, ...)`, damit jedes Pattern ab Erzeugung mindestens eine `patternDynamic`-Baseline-Zeile hat — Voraussetzung für As-of-Queries (`WHERE patternId=? AND eventId<=? ORDER BY eventId DESC LIMIT 1`).
+
+## Rule-Induction-Strategie
+- Kein pre-materialisierter "Monster-Join" (Trade+Event+Market+15×Relations+PatternCore/Dynamic+8-10×Story-Events+PatternCore/Dynamic, überschlagen ~1750-2000 Spalten). Stattdessen: Rule Induction läuft direkt über Claude mit SQL-Zugriff auf das normalisierte Schema, mit gezielten, schmalen Queries pro Hypothese.
+- Konsequenz: keine Denormalisierung/Feld-Duplizierung in `relations`/`events` einbauen, um einen Join zu vereinfachen — bewusst verworfen zugunsten von As-of-Queries gegen `patternDynamic` (siehe oben).
+
 ## Aktueller Implementierungsstand
 - Abort-nach-X-Bars, `against`-Inversion und volle Variants-Tabelle: implementiert und verifiziert.
 - Grundfelder (events/trades/market/patternCore/patternDynamic) an Live-Daten verifiziert (Phase 2), zwei Bugs dabei gefunden und gefixt: `Visualizer.mq5` (7 veraltete Feldnamen), `structTrade.initialSLPrice/initialTPPrice` (nie gesetzt).
 - Relations auf die echten 15 `relationSlots` umgestellt und verifiziert (Phase 3, `EventManager.mqh::EvaluatePatternForSlots`) — DREIER/VTH/HAMMER_BAR/TANGENTE-Slots befüllen sich korrekt (D1_NEXT_TANGENTE bleibt strukturell immer leer, TANGENTE kommt nur auf M3/H1 vor).
 - Story (letzte 8–10 Events) ist weiterhin nicht implementiert.
 - **TANGENTE-Erkennung neu implementiert und verifiziert** (`PatternManager.mqh::DetectNewTangentePattern`/`TryFormTangente`/`CreateTangente`): 5-Bar-Fraktal-Swings, Mindestabstand 5 Bars zwischen den beiden Swing-Punkten (`TANGENTE_MIN_BARS_BETWEEN`), max. 3 gleichzeitig aktive Tangenten je TF+Richtung mit FIFO-Verdrängung (`TANGENTE_MAX_ACTIVE`), Bruch = Close jenseits der extrapolierten Linie über die bestehende `UpdatePatternTouchStates`/`ClearBrokenButNotConfirmed`-Maschinerie (kein Docht-Bruch). Läuft auf M3 und H1, beide Richtungen (LONG=Support/steigende Tiefs, SHORT=Resistance/fallende Hochs).
-- `Backtester.mq5` kompiliert fehlerfrei (0 Errors/0 Warnings).
+- **Visualizer-Rendering-Bug behoben**: `OBJ_TREND`-Objekte liefen per MT5-Default unendlich nach rechts weiter (`RAY_RIGHT=true`), unabhängig vom gesetzten Linienende — betraf VTH/DREIER/TANGENTE gleichermaßen. `RenderQueue.mqh` setzt jetzt `RAY_RIGHT`/`RAY_LEFT=false` für alle `OBJ_TREND`.
+- **`validUntil` von `patternCore` nach `patternDynamic` verschoben** (siehe Konvention oben) und der bisherige TANGENTE-Sonderfall beim ersten echten Break (`ClearBrokenButNotConfirmed`) generisch für alle Pattern-Typen gemacht — vorher wurde `validUntil` bei DREIER/VTH nie aktualisiert. Visualizer nutzt für VTH/RANGE jetzt den neuesten `patternDynamic`-Snapshot (`pd.validUntil` wenn `status==CLOSED`, sonst `TimeCurrent()`) statt des nie aktualisierten `patternCore`-Werts.
+- `Backtester.mq5` und `Visualizer.mq5` kompilieren fehlerfrei (0 Errors/0 Warnings).
 
 ## Roadmap (Gesamtplan)
 1. Code sauber ziehen (Varianten generieren, in Tabelle ablegen) — ✅ erledigt
