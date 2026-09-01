@@ -82,7 +82,9 @@ Ausgangspunkt: die 15 `relationSlots` wählen aktuell rein nach "zeitlich zuletz
 - HYP4 nach Korrektur eines Lookahead-Bugs (H1-Pattern muss vor dem M3-Touch bereits existieren — `h.validFrom <= eventTime`) und Umstellung auf echte Revisit-Logik (echtes H1-`IS_TOUCHED`-Event, nicht nur Preisband-Mitgliedschaft) noch **nicht robust testbar**: nur 76 H1-DREIER-`IS_TOUCHED`-Events insgesamt, Teilstichproben nach Filterung auf 6–138 Trades geschrumpft. Braucht mehr Historie (3-Monats-Datengenerierung geplant).
 - HYP2 war zunächst nicht mit echten Trade-Ergebnissen testbar (die einzige VRR-Regel generierte Trades nur für `IS_TOUCHED`, nicht für `IS_POSTBREAK_RETEST_TOUCHED`, 569 Events aber 0 Trades). **Behoben:** zweite VRR-Regel `M3_DREIER_IS_POSTBREAK_RETEST_TOUCHED` ergänzt (`EventManager.mqh::Init()`), bewusst mit identischen SL/TP-Werten (10/30) wie die bestehende Regel, um HYP1–HYP3 direkt vergleichbar zu halten (gleiche Breakeven-Schwelle 25%) statt Einstiegs-Typ und CRV gleichzeitig zu variieren. Noch nicht an neuen Daten verifiziert.
 
-**Nächste Schritte (Konsolidierungsplan):** 1. Hypothesen benennen (✅ erledigt) → 2. Datentabellen feldweise auf Korrektheit prüfen (Zeit-/Richtungs-/Statuskonvention) → 3. fehlende Event-Emissionen ergänzen (siehe `IS_POSTBREAK_RETEST_BROKEN`/`IS_TREND_BREAK`-Lücke oben) → 4. entscheiden ob eine zweite VRR-Regel für `IS_POSTBREAK_RETEST_TOUCHED` nötig ist (HYP2) → 5. Daten über 3 Monate neu generieren.
+**Nächste Schritte (Konsolidierungsplan):** 1. Hypothesen benennen (✅ erledigt) → 2. Datentabellen feldweise auf Korrektheit prüfen (✅ erledigt, siehe oben) → 3. fehlende Event-Emissionen ergänzen (✅ erledigt, siehe oben) → 4. zweite VRR-Regel für `IS_POSTBREAK_RETEST_TOUCHED` ergänzt (✅ erledigt, siehe oben) → 5. Daten über 3 Monate neu generieren (⬅ vom User gestartet, Stand 2026-09-01 Ende Session: läuft/noch nicht ausgewertet).
+
+Sobald die 3-Monats-Daten vorliegen: HYP1/HYP3 (bereits mit 25-Tage-Daten bestätigt) an größerer Stichprobe erneut prüfen, HYP2 (jetzt mit Trades) und HYP4 (Cross-Timeframe, brauchte in 25 Tagen zu wenig H1-Touch-Events) erstmals robust testen. Methodischer Hinweis für die Auswertung: unbedingt auf Lookahead-Bias bei Zeitfenster-Joins achten (`patternCore.validFrom` als Existenz-Cutoff verwenden, nicht nur `startTime`-Überlappung) — siehe HYP4-Analyse in dieser Session, wo ein ungeprüfter Join zunächst ein Scheinergebnis (50% Winrate) lieferte, das sich nach Korrektur umkehrte.
 
 ## Pattern-Status-Lifecycle (OPEN/BROKEN/CLOSED)
 - Drei Stati (`enum PatternStatus`, EnumDefAndConvert.mqh:43): `OPEN`, `BROKEN`, `CLOSED`. Kritischer Preis: bei LONG-Pattern `priceLow`, bei SHORT-Pattern `priceHigh` — Bruch = Kurs schließt jenseits davon.
@@ -110,14 +112,14 @@ Ausgangspunkt: die 15 `relationSlots` wählen aktuell rein nach "zeitlich zuletz
 ## Roadmap (Gesamtplan)
 1. Code sauber ziehen (Varianten generieren, in Tabelle ablegen) — ✅ erledigt
 2. Anhand weniger Datensätze Feldkorrektheit prüfen (Grundfelder) — ✅ erledigt
-3. Alles freischalten, EA über größeren Zeitraum laufen lassen — ⬅ aktuelle Phase (Relations auf 15 Slots umgestellt, TANGENTE-Erkennung neu implementiert, beides an Live-Daten verifiziert)
-4. Erste Regelfindung ausgehend von `M3_DREIER_IS_TOUCHED` mit `causedOppositeBreak = true`
+3. Alles freischalten, EA über größeren Zeitraum laufen lassen — ✅ erledigt (Relations auf 15 Slots umgestellt, TANGENTE-Erkennung neu implementiert, Pattern-Status-Lifecycle + fehlende Event-Emissionen nachgezogen, alles an 25-Tage-Live-Daten verifiziert)
+4. Erste Regelfindung ausgehend von `M3_DREIER_IS_TOUCHED` — ⬅ aktuelle Phase (siehe HYP1–HYP4 oben; HYP1/HYP3 mit 25-Tage-Daten bestätigt, 3-Monats-Datengenerierung für robustere HYP2/HYP4-Tests angestoßen)
 5. Weitere, story-basierte Regeln
 
 ## Offene Punkte
 - `VRRandERRadd.mqh::VRR_Add`: Parsing von `trailingAbortDistanceList` (Feld 9) nutzt noch eine verworfene `dummyCount`-Variable statt eines echten Counts — nicht im Rahmen des ersten Umbaus angefasst.
-- Pattern-Status-Lifecycle (siehe oben) ist entschieden, aber noch nicht implementiert.
-- **Nächstes Thema (Stand 2026-08-31):** Auswahlregeln für die 14 räumlichen Relation-Slots (`EventManager.mqh::EvaluatePatternForSlots`) sollen diskutiert und verschärft werden — Ausgangsfrage des Users: die Event-Story beschreibt, welche "Züge" passiert sind, aber nicht *wo* auf dem Feld (eigener Strafraum vs. vor dem gegnerischen Tor). User bezog sich auf eine Fußballspieler-Analogie aus einer früheren, in dieser Session nicht sichtbaren Unterhaltung — beim Wiederaufnehmen ggf. nachfragen/erneut zeigen lassen.
+- Auswahlregeln für die 14 räumlichen Relation-Slots (`EventManager.mqh::EvaluatePatternForSlots`) sind weiterhin unverändert (rein "zeitlich zuletzt" bzw. "räumlich am nächsten", kein Trend-/Rollenbezug) — die Diskussion dazu läuft jetzt über die Hypothesen HYP1–HYP4 (siehe oben) statt der ursprünglichen Fußballspieler-Analogie. Slot-Code wird erst überarbeitet, sobald HYP1–HYP4 mit den 3-Monats-Daten robust bestätigt/verworfen sind — bewusste Reihenfolge (Datenbasis zuerst, dann Code), siehe Rule-Induction-Strategie oben.
+- Aktuell nur eine (nicht variierende) Kombination in `variants` (SL=10/TP=30 für beide VRR-Regeln) — ein SL/TP-Sweep über mehrere Werte ist als späterer, separater Schritt vorgesehen, erst wenn klar ist, welche Hypothesen überhaupt optimierungswürdig sind.
 
 ## Zusammenarbeit
 - Kleine, nachvollziehbare Schritte; bei mehrdeutigen Design-Entscheidungen nachfragen statt raten.
