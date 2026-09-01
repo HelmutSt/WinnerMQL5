@@ -1350,13 +1350,16 @@ public:
             if(p.core.type == DREIER)             // causedOppositePatternBreak setzen
                OppositePatternBreak(p);
 
+            bool trendJustBroke = false;
             if(p.core.type == DREIER)
-               TrendBruch(p, bb.bars[1].time);
+               trendJustBroke = TrendBruch(p, bb.bars[1].time);
 
             // -------- p ist eine kopie
             patterns[i] = p;
 
             EmitEvent(p, IS_BROKEN, bb.bars[1].time, bb.bars[1].close);
+            if(trendJustBroke)
+               EmitEvent(p, IS_TREND_BREAK, bb.bars[1].time, bb.bars[1].close);
             continue;
            }
 
@@ -1390,6 +1393,7 @@ public:
             p.dynamic.validUntil = bb.bars[1].time + bb.periodSec;
 
             patterns[i] = p;
+            EmitEvent(p, IS_POSTBREAK_RETEST_BROKEN, bb.bars[1].time, bb.bars[1].close);
             continue;
            }
         }
@@ -1424,17 +1428,17 @@ public:
    //+------------------------------------------------------------------+
    //|                                                                  |
    //+------------------------------------------------------------------+
-   void              TrendBruch(structPattern &p, datetime time)
+   bool              TrendBruch(structPattern &p, datetime time)
      {
       // TrendBruch nur in M3 und H1
       if(p.core.timeFrame != PERIOD_M3 && p.core.timeFrame != PERIOD_H1)
-         return;
+         return false;
 
       int tfIdx = TimeFrameToIndex(p.core.timeFrame);
 
       // Nur wenn der gebrochene DREIER im aktuellen Trend lag
       if(p.core.direction != meta[tfIdx].trendPattern)
-         return;
+         return false;
 
       // Pattern kennzeichnen
       p.dynamic.isTrendBreak = true;
@@ -1451,6 +1455,8 @@ public:
 
       // Neuen SoM suchen und setzen
       SomSuchenUndSetzen(p);
+
+      return true;
      }
    //+------------------------------------------------------------------+
    //|                                                                  |
