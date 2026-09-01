@@ -111,6 +111,7 @@ public:
 
       //          M3 DREIER
       VRR_Add("M3_DREIER_IS_TOUCHED         LIMIT   -      -      1     10       30           10         -           -  ");
+      VRR_Add("M3_DREIER_IS_POSTBREAK_RETEST_TOUCHED  LIMIT   -      -      1     10       30           10         -           -  ");   // HYP2
       // VRR_Add("M3_DREIER_IS_FAKE_BREAK      TRAIL   -      -      1     10       50,70,100    10         -           -  ");
       // VRR_Add("M3_DREIER_IS_BROKEN          LIMIT   X      -      1     10       50,70,100    10         -           -  ");
       // VRR_Add("M3_DREIER_IS_RETOUCHED       LIMIT   X      -      1     10       50,70,100    10         -           -  ");
