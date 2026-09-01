@@ -1333,7 +1333,9 @@ public:
             p.dynamic.breakTime     = bb.bars[1].time + bb.periodSec;
             p.dynamic.breakBarIndex = bb.bars[0].barIndex;
 
-            p.dynamic.status = CLOSED; // BROKEN;    Ausnahme !!!!!
+            // DREIER/VTH: BROKEN (Postbreak-Retest kann noch CLOSED bestätigen)
+            // TANGENTE: springt direkt zu CLOSED, kein Postbreak-Retest-Tracking
+            p.dynamic.status = (p.core.type == DREIER || p.core.type == VTH) ? BROKEN : CLOSED;
             p.dynamic.validUntil = bb.bars[1].time + bb.periodSec;
 
             // das kann sein - oder?  p.dynamic.hadFakeBreak = false;
