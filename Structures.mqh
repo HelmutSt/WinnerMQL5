@@ -980,8 +980,6 @@ struct structPatternTemp      // last Chance 07.07.2026
 
    int               previousPatternIdx; // same type und direction
 
-   string            name;                             // Runtime: Debug-/Render-Name, NICHT exportieren
-
    void              Init()
      {
       isTouching                           = true; // wird erst nach away schaft geschaltet
@@ -994,8 +992,6 @@ struct structPatternTemp      // last Chance 07.07.2026
       postBreakRetestBrokenButNotConfirmed = false;
 
       previousPatternIdx                   = -1;
-
-      name                                 = "";
      }
   };
 // ####################################################################

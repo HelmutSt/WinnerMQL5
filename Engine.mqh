@@ -74,7 +74,7 @@ public:
    // -------------------------------------------------------------------------------------
    void              OnPattern(structPattern &p)
      {
-      Print(">>> OnPattern: ",EnumToString(p.core.timeFrame)+" "+EnumToString(p.core.type));
+    //  Print(">>> OnPattern: ",EnumToString(p.core.timeFrame)+" "+EnumToString(p.core.type));
      };
    // -------------------------------------------------------------------------------------
    void              OnEvent(structEvent &ev)

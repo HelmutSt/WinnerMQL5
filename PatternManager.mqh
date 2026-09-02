@@ -110,8 +110,6 @@ public:
    bool              Add(structPattern &p)
      {
 
-      p.temp.name = BuildPatternName(p.core.timeFrame, p.core.direction, p.core.type, p.core.validFrom);
-
       patterns[patternCount] = p;
       patternCount++;
 
@@ -122,16 +120,6 @@ public:
       engine.OnPattern(p);
 
       return true;
-     };
-   // ---------------------------------------------------------------
-   int               FindIndex(string name)
-     {
-      for(int i = patternCount - 1; i >= 0; i--)
-        {
-         if(patterns[i].temp.name == name)
-            return i;
-        }
-      return -1;
      };
    // ---------------------------------------------------------------
    structPattern     GetById(int patternId)
@@ -375,11 +363,6 @@ public:
       bool isLong  = (p.core.direction == LONG);
       bool isShort = !isLong;
 
-      if(p.core.patternId == 42 && distNominal <= nearThreshold)
-        {
-         Print(" ");
-        }
-
       // ============================================================
       // STATUS: OPEN
       // ============================================================
@@ -502,30 +485,6 @@ public:
       // -- Fake or Break ------------------------------------------------
       ClearBrokenButNotConfirmed(bb);
 
-     }
-
-   // -------------------------------------------------------
-   string            BuildPatternName(ENUM_TIMEFRAMES tf, Direction dir, PatternType type, datetime time)
-     {
-      string tfStr = (tf == PERIOD_M1 ? "M1" :
-                      tf == PERIOD_M3 ? "M3" :
-                      tf == PERIOD_H1 ? "H1" :
-                      tf == PERIOD_D1 ? "D1" : "??");
-
-      MqlDateTime t;
-      TimeToStruct(time, t);
-      long patternNo = t.day_of_year * 10000 + t.hour * 100 + t.min;
-
-      string strType = EnumToString(type); //DREIER VTH HAMMER RANGE
-      strType = StringSubstr(strType,0,3);
-      if(type == DREIER)
-         strType = "3er";
-
-      return StringFormat("%s%s %s %07d",
-                          tfStr,
-                          (dir == LONG ? "L" : "S"),
-                          strType,
-                          patternNo);
      }
 
    // -------------------------------------------------------------
@@ -1200,6 +1159,7 @@ public:
       // ---------------------------------------------------------
       bool found = false;
       structPattern prev;   // lokale Kopie
+      prev.Init();
 
       for(int i = patternCount - 1; i >= 0; i--)
         {

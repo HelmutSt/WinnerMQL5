@@ -31,7 +31,7 @@ public:
      {
       for(int tfIdx = 0; tfIdx < NUM_TIMEFRAMES; tfIdx++)
         {
-         // nur für debug ENUM_TIMEFRAMES tf = barBlocks[tfIdx].timeFrame;
+
          int periodSec      = barBlocks[tfIdx].periodSec;
          datetime barBegin = t.time - (t.time % periodSec);
 

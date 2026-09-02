@@ -59,7 +59,7 @@ int OnInit()
 //+------------------------------------------------------------------+
 void OnDeinit(const int reason)
   {
-   Print("--- OnDeinit");
+   Print(__FUNCTION__,"--- OnDeinit");
    EventKillTimer();
    engine.DeInit();
   };
