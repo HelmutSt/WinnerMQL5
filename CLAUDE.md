@@ -21,8 +21,8 @@ Kernidee: Trade-Entscheidungen werden primär aus der Story (Sequenz vorheriger 
 `eventDirection` bestimmt die Order-Richtung des Trades und wird in `PatternManager.mqh::CalcEventDirection()` aus `patternDirection` + `eventReason` abgeleitet:
 
 | eventReason | eventDirection relativ zu patternDirection |
-|---|---|
-| IS_CREATED | = patternDirection |
+|-------------|--------------------------------------------|
+| IS_CREATED  | = patternDirection                         |
 | IS_STRONGER_THAN_PREVIOUS | = patternDirection (Story-only, löst i.d.R. keinen Trade aus) |
 | IS_NEAR_TOUCHED | = patternDirection |
 | IS_TOUCHED | = patternDirection |
@@ -124,5 +124,5 @@ Sobald die 3-Monats-Daten vorliegen: HYP1/HYP3 (bereits mit 25-Tage-Daten bestä
 ## Zusammenarbeit
 - Kleine, nachvollziehbare Schritte; bei mehrdeutigen Design-Entscheidungen nachfragen statt raten.
 - Vor jeder "fertig"-Meldung: wenn möglich mit MetaEditor kompilieren und Ergebnis nennen (0 Errors/0 Warnings o.ä.), nicht nur den Code lesen.
-- Riskante/destruktive Nebenwirkungen (z. B. gelöschte .ex5-Binaries durch Compile) immer transparent melden, auch wenn sie nicht beabsichtigt waren — kein Git-Netz vorhanden.
+- Riskante/destruktive Nebenwirkungen (z. B. gelöschte .ex5-Binaries durch Compile) immer transparent melden, auch wenn sie nicht beabsichtigt waren  
 - Diese Datei bildet nur den *stabilen* Stand ab (Architektur, Konventionen, offene strukturelle Punkte) — Fortschritt einzelner Sessions gehört nicht hierher, sondern in die Konversation/Commits.

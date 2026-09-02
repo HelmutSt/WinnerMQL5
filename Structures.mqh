@@ -30,8 +30,8 @@ struct structMarket
   {
    // Spread
    double            spread;                 // Tick-Ebene (MarketManager.OnTick): aktueller Tick-Spread (ask-bid), wichtig für EntryPrice, Slippage und Liquiditätsfilter.
-   double            avgSpreadM3;            // BarManager.marketFeed: durchschnittliche Range der letzten M3-Bars, zeigt Marktqualität und chaotische Phasen.
-   double            maxSpreadM3;            // BarManager.marketFeed: maximale Range der letzten M3-Bars, identifiziert extreme Volatilität und News-Spikes.
+   double            avgSpreadM3;            // BarManager.marketFeed: durchschnittlicher Bid/Ask-Spread über die letzten 20 abgeschlossenen M3-Bars, zeigt Marktqualität und chaotische Phasen.
+   double            maxSpreadM3;            // BarManager.marketFeed: maximaler Bid/Ask-Spread über die letzten 20 abgeschlossenen M3-Bars, identifiziert extreme Illiquidität und News-Spikes.
 
    // Volatility (Preisvolatilität)
    double            atrM1;                  // BarManager.marketFeed: kurzfristige Preisvolatilität (M1).
@@ -417,16 +417,22 @@ struct structBar
    ulong             volume;
    BarShape          shape;
    int               barIndex;
+   double            spreadSum;    // Summe der Tick-Spreads (ask-bid) während dieser Bar, für avgSpread-Berechnung
+   int               spreadCount;  // Anzahl Ticks, die in spreadSum eingeflossen sind
+   double            spreadMax;    // Maximaler Tick-Spread während dieser Bar
    void              Init()
      {
-      time     = 0;
-      open     = 0.0;
-      high     = 0.0;
-      low      = 0.0;
-      close    = 0.0;
-      volume   = 0;
-      shape    = UNCLASSIFIED;
-      barIndex = -1;
+      time        = 0;
+      open        = 0.0;
+      high        = 0.0;
+      low         = 0.0;
+      close       = 0.0;
+      volume      = 0;
+      shape       = UNCLASSIFIED;
+      barIndex    = -1;
+      spreadSum   = 0.0;
+      spreadCount = 0;
+      spreadMax   = 0.0;
      }
   };
 struct structBarBlock

@@ -66,6 +66,11 @@ private:
       barBlocks[tfIdx].bars[0].shape    = UNCLASSIFIED;
       barBlocks[tfIdx].bars[0].barIndex = barIdx;
 
+      double sp0 = t.ask - t.bid;
+      barBlocks[tfIdx].bars[0].spreadSum   = sp0;
+      barBlocks[tfIdx].bars[0].spreadCount = 1;
+      barBlocks[tfIdx].bars[0].spreadMax   = sp0;
+
       // Trend bestimmen
       barBlocks[tfIdx].trend = GetTrendFromBars(barBlocks[tfIdx]);
 
@@ -82,6 +87,12 @@ private:
       barBlocks[tfIdx].bars[0].low    = MathMin(barBlocks[tfIdx].bars[0].low,  t.last);
       barBlocks[tfIdx].bars[0].close  = t.last;
       barBlocks[tfIdx].bars[0].volume += t.volume;
+
+      double sp = t.ask - t.bid;
+      barBlocks[tfIdx].bars[0].spreadSum += sp;
+      barBlocks[tfIdx].bars[0].spreadCount++;
+      if(sp > barBlocks[tfIdx].bars[0].spreadMax)
+         barBlocks[tfIdx].bars[0].spreadMax = sp;
      }
 
    // ---------------------------------------------------------
@@ -185,20 +196,21 @@ private:
 
       barBlocks[tfIdx].av = sumAV / 14.0;
 
-      // --- SpreadStats (Range) ---
-      double sumRange = 0;
-      double maxRange = 0;
+      // --- SpreadStats (echter Bid/Ask-Spread, Ø/Max über die letzten 20 abgeschlossenen Bars) ---
+      double sumAvgSpread = 0;
+      double maxSpreadSeen = 0;
 
-      for(int i=0; i<20; i++)
+      for(int i=1; i<=20; i++)
         {
-         double r = barBlocks[tfIdx].bars[i].high - barBlocks[tfIdx].bars[i].low;
-         sumRange += r;
-         if(r > maxRange)
-            maxRange = r;
+         structBar bar = barBlocks[tfIdx].bars[i];
+         double barAvgSpread = (bar.spreadCount > 0 ? bar.spreadSum / bar.spreadCount : 0.0);
+         sumAvgSpread += barAvgSpread;
+         if(bar.spreadMax > maxSpreadSeen)
+            maxSpreadSeen = bar.spreadMax;
         }
 
-      barBlocks[tfIdx].avgSpread = sumRange / 20.0;
-      barBlocks[tfIdx].maxSpread = maxRange;
+      barBlocks[tfIdx].avgSpread = sumAvgSpread / 20.0;
+      barBlocks[tfIdx].maxSpread = maxSpreadSeen;
 
       // --- Position update ---
       barBlocks[tfIdx].pos = (barBlocks[tfIdx].pos + 1) % 14;
@@ -222,6 +234,8 @@ private:
          engine.market.avgSpreadM3  = barBlocks[tfIdx].avgSpread;
          engine.market.maxSpreadM3  = barBlocks[tfIdx].maxSpread;
          engine.market.relativeVolume = (engine.market.avM3 > 0 ? volNow / engine.market.avM3 : 0);
+         engine.market.atrRatioM3_H1  = (engine.market.atrH1 > 0 ? engine.market.atrM3 / engine.market.atrH1 : 0.0);
+         engine.market.lastUpdate     = barBlocks[tfIdx].bars[0].time;
          marketManager.TrendSet(barBlocks[tfIdx].bars[0].time,"trendMathM3",barBlocks[tfIdx].trend); // ✔ korrekt
         }
       if(barBlocks[tfIdx].timeFrame == PERIOD_H1)

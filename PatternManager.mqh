@@ -1193,7 +1193,7 @@ public:
       if(p.core.timeFrame == PERIOD_H1)
          p.core.trendContextAtCreate = engine.market.trendPatternH1;         // PatternManager: Pattern-basierter Trend (DREIER-Kontext).
 
-      p.core.patternStrengthAtCreate = 0; // siehe unten ComputePatternStrength(structPattern &p)
+      p.core.patternStrengthAtCreate = 0; // wird unten via ComputePatternStrength(p) befüllt
 
       // ---------------------------------------------------------
       // 1. Vorgänger suchen (rückwärts, zeitlich sortiertes Array)
@@ -1218,7 +1218,10 @@ public:
         }
       // ---------------------------------------------------------
       if(!found)
-         return true;      // Kein Vorgänger → Default-Werte aus .Init() stehen lassen
+        {
+         p.core.patternStrengthAtCreate = ComputePatternStrength(p);  // Default-Werte aus .Init() für Relation-zu-Vorgänger-Terme
+         return true;      // Kein Vorgänger → sonst Default-Werte aus .Init() stehen lassen
+        }
 
       // ---------------------------------------------------------
       // 1. ok - und los !
@@ -1283,6 +1286,8 @@ public:
       p.core.isOutsidePrevious =
          (currHigh < prevLow || currLow > prevHigh);
 
+      p.core.patternStrengthAtCreate = ComputePatternStrength(p);
+
       return true;
      }
    // ####################################################################
@@ -1323,20 +1328,20 @@ public:
                p.dynamic.status = OPEN;
                p.dynamic.hadFakeBreak = true;
                patterns[i] = p;
-               EmitEvent(p, IS_FAKE_BREAK, bb.bars[1].time, bb.bars[1].close);
+               EmitEvent(p, IS_FAKE_BREAK, bb.bars[0].time, bb.bars[1].close);
                continue;
               }
 
             // ---------------------------------------------------------
             // ECHTER BREAK
             // ---------------------------------------------------------
-            p.dynamic.breakTime     = bb.bars[1].time + bb.periodSec;
+            p.dynamic.breakTime     = bb.bars[0].time;
             p.dynamic.breakBarIndex = bb.bars[0].barIndex;
 
             // DREIER/VTH: BROKEN (Postbreak-Retest kann noch CLOSED bestätigen)
             // TANGENTE: springt direkt zu CLOSED, kein Postbreak-Retest-Tracking
             p.dynamic.status = (p.core.type == DREIER || p.core.type == VTH) ? BROKEN : CLOSED;
-            p.dynamic.validUntil = bb.bars[1].time + bb.periodSec;
+            p.dynamic.validUntil = bb.bars[0].time;
 
             // das kann sein - oder?  p.dynamic.hadFakeBreak = false;
 
@@ -1352,14 +1357,14 @@ public:
 
             bool trendJustBroke = false;
             if(p.core.type == DREIER)
-               trendJustBroke = TrendBruch(p, bb.bars[1].time);
+               trendJustBroke = TrendBruch(p, bb.bars[0].time);
 
             // -------- p ist eine kopie
             patterns[i] = p;
 
-            EmitEvent(p, IS_BROKEN, bb.bars[1].time, bb.bars[1].close);
+            EmitEvent(p, IS_BROKEN, bb.bars[0].time, bb.bars[1].close);
             if(trendJustBroke)
-               EmitEvent(p, IS_TREND_BREAK, bb.bars[1].time, bb.bars[1].close);
+               EmitEvent(p, IS_TREND_BREAK, bb.bars[0].time, bb.bars[1].close);
             continue;
            }
 
@@ -1381,7 +1386,7 @@ public:
                p.dynamic.hadFakeRetestBreak = true;
 
                patterns[i] = p;
-               EmitEvent(p, IS_POSTBREAK_RETEST_FAKE_BREAK, bb.bars[1].time, bb.bars[1].close);
+               EmitEvent(p, IS_POSTBREAK_RETEST_FAKE_BREAK, bb.bars[0].time, bb.bars[1].close);
                continue;
               }
 
@@ -1390,10 +1395,10 @@ public:
             // ---------------------------------------------------------
             p.dynamic.hadFakeRetestBreak= false;
             p.dynamic.status = CLOSED;
-            p.dynamic.validUntil = bb.bars[1].time + bb.periodSec;
+            p.dynamic.validUntil = bb.bars[0].time;
 
             patterns[i] = p;
-            EmitEvent(p, IS_POSTBREAK_RETEST_BROKEN, bb.bars[1].time, bb.bars[1].close);
+            EmitEvent(p, IS_POSTBREAK_RETEST_BROKEN, bb.bars[0].time, bb.bars[1].close);
             continue;
            }
         }

@@ -375,10 +375,11 @@ private:
          (ev.eventPrice >= p.core.priceLow &&
           ev.eventPrice <= p.core.priceHigh);
 
-      // TouchingNow
-      r.isTouchingNow =
-         (ev.eventPrice == p.core.priceLow ||
-          ev.eventPrice == p.core.priceHigh);
+      // TouchingNow: gleiche Bedingung wie die Touch-Detektion in UpdatePatternTouchStates()
+      // (dort feuert IS_TOUCHED bei distNominal<=0, nicht bei exakter Gleichheit mit priceLow/priceHigh -
+      // der Tick kann den Nominal-Preis schon uebersprungen haben)
+      double distNominalNow = (ev.eventPrice - nominal) * p.core.direction;
+      r.isTouchingNow = (distNominalNow <= 0);
 
       // NearTouchingNow (0.2 ATR als Beispiel)
       double distLow  = MathAbs(ev.eventPrice - p.core.priceLow);
@@ -399,6 +400,7 @@ private:
       if(p.core.type == TANGENTE)
         {
          // Tangenten-Felder
+         r.eventSlopeRelation = p.core.priceSlopePerBar;  // echte Slope, DREIER/VTH haben 0.0 (siehe FillRelationForDreier)
          r.tangenteIndex    = 3;
          r.tangSlope        = p.core.priceSlopePerBar;
          //  r.tangAngle        = 0.0; // falls später berechnet
@@ -423,10 +425,8 @@ private:
       // ---------------------------------------------------------
       // 5. Relative Lage
       // ---------------------------------------------------------
-      r.eventSlopeRelation    = p.core.priceSlopePerBar; // Tangenten haben echte slope
+      r.eventSlopeRelation    = 0.0; // DREIER/VTH sind horizontale Linien, keine Slope (echte Slope: siehe TANGENTE-Zweig in FillRelationSlot)
       r.eventPositionRelative = 0.0; // Tangenten haben kein Fenster
-      // DREIER/VTH haben slope = 0 → eventSlopeRelation = 0
-      r.eventSlopeRelation = 0.0;
 
       // Position im Fenster (0..1)
       double range = p.core.priceHigh - p.core.priceLow;
