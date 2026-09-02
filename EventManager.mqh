@@ -379,6 +379,9 @@ private:
       // (dort feuert IS_TOUCHED bei distNominal<=0, nicht bei exakter Gleichheit mit priceLow/priceHigh -
       // der Tick kann den Nominal-Preis schon uebersprungen haben)
       double distNominalNow = (ev.eventPrice - nominal) * p.core.direction;
+      // BROKEN: Retest kommt von der anderen Seite, gleiche Vorzeichenumkehr wie dort (Zeile "distNominal = -distNominal;")
+      if(p.dynamic.status == BROKEN)
+         distNominalNow = -distNominalNow;
       r.isTouchingNow = (distNominalNow <= 0);
 
       // NearTouchingNow (0.2 ATR als Beispiel)

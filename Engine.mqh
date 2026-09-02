@@ -58,7 +58,7 @@ public:
    // -------------------------------------------------------------------------------------
    void              OnNewBar(structBarBlock &bb)
      {
-      Print(">>> OnNewBar: ",EnumToString(bb.timeFrame));
+     // Print(">>> OnNewBar: ",EnumToString(bb.timeFrame));
 
       if(bb.timeFrame == PERIOD_D1 && tradeManager.GetCount() > 0)
         {
