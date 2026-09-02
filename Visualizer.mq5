@@ -259,6 +259,60 @@ void OnChartEvent(const int id,
         }
       Panel_Scroll(0);
       ChartRedraw();
+      return;
+     }
+
+// ---------------------------------------------------------
+// 4) Taste B → Pattern-Zone als Quadrat ein-/ausblenden
+// ---------------------------------------------------------
+   if(id == CHARTEVENT_KEYDOWN && (char)lparam == 'B')
+     {
+      if(selectedObjectName == "")
+         return;
+      if(StringSubstr(selectedObjectName, 0, 1) != "P")
+         return;
+
+      int patternId = (int)StringToInteger(StringSubstr(selectedObjectName, 2));
+      TogglePatternBox(patternId);
+
+      // Skala fix mit aktuellen Werten einschalten (Preisachse nicht mehr autoskalieren)
+      ChartSetDouble(0, CHART_FIXED_MIN, ChartGetDouble(0, CHART_PRICE_MIN));
+      ChartSetDouble(0, CHART_FIXED_MAX, ChartGetDouble(0, CHART_PRICE_MAX));
+      ChartSetInteger(0, CHART_SCALEFIX, true);
+
+      ChartRedraw();
+      return;
+     }
+
+// ---------------------------------------------------------
+// 5) Taste P → bei selektierter Relation zum Pattern springen
+// ---------------------------------------------------------
+   if(id == CHARTEVENT_KEYDOWN && (char)lparam == 'P')
+     {
+      if(selectedObjectName == "")
+         return;
+      if(StringSubstr(selectedObjectName, 0, 1) != "R")
+         return;
+
+      int relationId = (int)StringToInteger(StringSubstr(selectedObjectName, 2));
+
+      string sql = StringFormat("SELECT patternId FROM relations WHERE relationId = %d;", relationId);
+      int stmt = DatabasePrepare(db, sql);
+      if(stmt == INVALID_HANDLE)
+         return;
+
+      if(DatabaseRead(stmt))
+        {
+         int patternId = -1;
+         DatabaseColumnInteger(stmt, 0, patternId);
+         DatabaseFinalize(stmt);
+         if(patternId >= 0)
+            GoToPattern(patternId);
+        }
+      else
+         DatabaseFinalize(stmt);
+
+      return;
      }
   };
 //+------------------------------------------------------------------+
@@ -429,23 +483,108 @@ void GoToEvent(int eventId)
 
    datetime evTime = (datetime)ObjectGetInteger(0, name, OBJPROP_TIME, 1);
 
-   // altes Objekt deselektieren, neues selektieren (wie beim Objekt-Klick)
+   SelectObject(name);
+   CenterChartOnBar(evTime);
+
+   ObjectSetString(0, "GOTO_EVENTID", OBJPROP_TEXT, "");
+   ChartRedraw();
+  };
+//+------------------------------------------------------------------+
+//| Pattern-Objekt selektieren und Chart darauf zentrieren            |
+//+------------------------------------------------------------------+
+void GoToPattern(int patternId)
+  {
+   string name = "P-" + IntegerToString(patternId);
+
+   if(ObjectFind(0, name) < 0)
+     {
+      Print("GoToPattern: Objekt ", name, " nicht gefunden.");
+      return;
+     }
+
+   datetime patTime = (datetime)ObjectGetInteger(0, name, OBJPROP_TIME, 0);
+
+   SelectObject(name);
+   CenterChartOnBar(patTime);
+
+   ChartRedraw();
+  };
+//+------------------------------------------------------------------+
+//| altes Objekt deselektieren, neues selektieren                     |
+//+------------------------------------------------------------------+
+void SelectObject(string name)
+  {
    if(selectedObjectName != "")
       ObjectSetInteger(0, selectedObjectName, OBJPROP_SELECTED, false);
    selectedObjectName = name;
    ObjectSetInteger(0, name, OBJPROP_SELECTED, true);
-
-   // horizontal zentrieren
-   int targetBar    = iBarShift(_Symbol, _Period, evTime, false);
+  };
+//+------------------------------------------------------------------+
+//| Chart horizontal so verschieben, dass Zeitpunkt t mittig liegt    |
+//+------------------------------------------------------------------+
+void CenterChartOnBar(datetime t)
+  {
+   int targetBar    = iBarShift(_Symbol, _Period, t, false);
    int barsOnScreen = (int)ChartGetInteger(0, CHART_VISIBLE_BARS);
    int shift        = targetBar - barsOnScreen / 2;
    if(shift < 0)
       shift = 0;
 
    ChartNavigate(0, CHART_END, -shift);
+  };
+//+------------------------------------------------------------------+
+//| Pattern-Preiszone als Quadrat ein-/ausblenden (Taste B)           |
+//+------------------------------------------------------------------+
+void TogglePatternBox(int patternId)
+  {
+   string boxName = "P-" + IntegerToString(patternId) + "-BOX";
 
-   ObjectSetString(0, "GOTO_EVENTID", OBJPROP_TEXT, "");
-   ChartRedraw();
+   if(ObjectFind(0, boxName) >= 0)
+     {
+      ObjectDelete(0, boxName);
+      return;
+     }
+
+   string sql = "SELECT * FROM patternCore WHERE patternId = " + IntegerToString(patternId) + ";";
+   int stmt = DatabasePrepare(db, sql);
+   if(stmt == INVALID_HANDLE)
+     {
+      Print("❌ DB Prepare failed (TogglePatternBox): ", GetLastError());
+      return;
+     }
+   if(!DatabaseRead(stmt))
+     {
+      Print("❌ PatternCore nicht gefunden: ", patternId);
+      DatabaseFinalize(stmt);
+      return;
+     }
+
+   structPatternCore pc;
+   pc.LoadAusSQL(stmt);
+   DatabaseFinalize(stmt);
+
+   datetime newestBar = iTime(_Symbol, _Period, 0);
+
+   ObjectCreate(0, boxName, OBJ_RECTANGLE, 0, pc.startTime, pc.priceHigh, newestBar, pc.priceLow);
+
+   // H1-Pattern werden in der M3-Ansicht DodgerBlue mit staerkerer Linie
+   // dargestellt (siehe RenderPatternCore) - Box soll dazu passen.
+   color boxColor = (pc.direction == LONG ? clrLimeGreen : clrRed);
+   int   boxWidth = 2;
+   if(pc.timeFrame == PERIOD_H1)
+     {
+      boxColor = clrDodgerBlue;
+      boxWidth = 3;
+     }
+
+   ObjectSetInteger(0, boxName, OBJPROP_COLOR, boxColor);
+   ObjectSetInteger(0, boxName, OBJPROP_WIDTH, boxWidth);
+   ObjectSetInteger(0, boxName, OBJPROP_STYLE, STYLE_SOLID);
+   ObjectSetInteger(0, boxName, OBJPROP_FILL, false);
+   ObjectSetInteger(0, boxName, OBJPROP_BACK, false);
+   ObjectSetInteger(0, boxName, OBJPROP_SELECTABLE, true);
+   ObjectSetInteger(0, boxName, OBJPROP_TIMEFRAMES, OBJ_PERIOD_M1 | OBJ_PERIOD_M3 | OBJ_PERIOD_H1);
+   ObjectSetString(0, boxName, OBJPROP_TOOLTIP, boxName);
   };
 //+------------------------------------------------------------------+
 //|                                                                  |
@@ -795,7 +934,7 @@ void LoadAndListMarket(int eventId)
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void LoadAndListRelations(int relationId, int patternId, int eventId)
+void LoadAndListRelations(int relationId, int &patternId, int &eventId)
   {
    string sql =
       "SELECT * "
@@ -1251,7 +1390,8 @@ void RenderEvent(const structEvent &ev)
 
    r.style      = STYLE_SOLID;
 
-   string label = "E-" + IntegerToString(ev.eventId) + " " + " P-" + IntegerToString(ev.patternId);
+   string label = "E-" + IntegerToString(ev.eventId) + " " + " P-" + IntegerToString(ev.patternId) +
+                  " " + EnumToString(ev.eventReason);
 
    r.text       = label;
    r.tooltip    = label;
