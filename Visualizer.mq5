@@ -79,6 +79,11 @@ int OnInit()
 // ChartSetInteger(0,CHART_EVENT_MOUSE_MOVE,1);
 
 // ---------------------------------------------------------
+// "Go to EventID" Eingabebox (oben rechts)
+// ---------------------------------------------------------
+   CreateGotoEventBox();
+
+// ---------------------------------------------------------
 // Chart auf das zuletzt gerenderte Objekt setzen
 // ---------------------------------------------------------
    int  barIndex = Bars(_Symbol, _Period);
@@ -116,6 +121,16 @@ void OnChartEvent(const int id,
                   const double &dparam,
                   const string &sparam)
   {
+// ---------------------------------------------------------
+// 0) "Go to EventID"-Box: Enter gedrueckt
+// ---------------------------------------------------------
+   if(id == CHARTEVENT_OBJECT_ENDEDIT && sparam == "GOTO_EVENTID")
+     {
+      string txt = ObjectGetString(0, "GOTO_EVENTID", OBJPROP_TEXT);
+      GoToEvent((int)StringToInteger(txt));
+      return;
+     }
+
 // ---------------------------------------------------------
 // 1) Chart-Klick → Panel + Relations + Results löschen
 // ---------------------------------------------------------
@@ -371,6 +386,68 @@ void LoadAndRenderEvents()
 
   };
 //+------------------------------------------------------------------+
+//| "Go to EventID"-Box oben rechts erzeugen                         |
+//+------------------------------------------------------------------+
+void CreateGotoEventBox()
+  {
+   string lbl = "GOTO_LABEL";
+   ObjectCreate(0, lbl, OBJ_LABEL, 0, 0, 0);
+   ObjectSetInteger(0, lbl, OBJPROP_CORNER, CORNER_RIGHT_UPPER);
+   ObjectSetInteger(0, lbl, OBJPROP_XDISTANCE, 180);
+   ObjectSetInteger(0, lbl, OBJPROP_YDISTANCE, 10);
+   ObjectSetString(0, lbl, OBJPROP_TEXT, "Go to EventID:");
+   ObjectSetInteger(0, lbl, OBJPROP_COLOR, clrBlack);
+   ObjectSetInteger(0, lbl, OBJPROP_FONTSIZE, 10);
+   ObjectSetInteger(0, lbl, OBJPROP_SELECTABLE, false);
+   ObjectSetInteger(0, lbl, OBJPROP_ZORDER, 10001);
+
+   string edit = "GOTO_EVENTID";
+   ObjectCreate(0, edit, OBJ_EDIT, 0, 0, 0);
+   ObjectSetInteger(0, edit, OBJPROP_CORNER, CORNER_RIGHT_UPPER);
+   ObjectSetInteger(0, edit, OBJPROP_XDISTANCE, 100);
+   ObjectSetInteger(0, edit, OBJPROP_YDISTANCE, 8);
+   ObjectSetInteger(0, edit, OBJPROP_XSIZE, 70);
+   ObjectSetInteger(0, edit, OBJPROP_YSIZE, 18);
+   ObjectSetString(0, edit, OBJPROP_TEXT, "");
+   ObjectSetInteger(0, edit, OBJPROP_COLOR, clrBlack);
+   ObjectSetInteger(0, edit, OBJPROP_BGCOLOR, clrWhite);
+   ObjectSetInteger(0, edit, OBJPROP_FONTSIZE, 10);
+   ObjectSetInteger(0, edit, OBJPROP_ZORDER, 10001);
+  };
+//+------------------------------------------------------------------+
+//| Event-Objekt selektieren und Chart darauf zentrieren             |
+//+------------------------------------------------------------------+
+void GoToEvent(int eventId)
+  {
+   string name = "E-" + IntegerToString(eventId);
+
+   if(ObjectFind(0, name) < 0)
+     {
+      Print("GoToEvent: Objekt ", name, " nicht gefunden.");
+      return;
+     }
+
+   datetime evTime = (datetime)ObjectGetInteger(0, name, OBJPROP_TIME, 1);
+
+   // altes Objekt deselektieren, neues selektieren (wie beim Objekt-Klick)
+   if(selectedObjectName != "")
+      ObjectSetInteger(0, selectedObjectName, OBJPROP_SELECTED, false);
+   selectedObjectName = name;
+   ObjectSetInteger(0, name, OBJPROP_SELECTED, true);
+
+   // horizontal zentrieren
+   int targetBar    = iBarShift(_Symbol, _Period, evTime, false);
+   int barsOnScreen = (int)ChartGetInteger(0, CHART_VISIBLE_BARS);
+   int shift        = targetBar - barsOnScreen / 2;
+   if(shift < 0)
+      shift = 0;
+
+   ChartNavigate(0, CHART_END, -shift);
+
+   ObjectSetString(0, "GOTO_EVENTID", OBJPROP_TEXT, "");
+   ChartRedraw();
+  };
+//+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
 void LoadAndRenderRelations(int eventId)
@@ -393,7 +470,7 @@ void LoadAndRenderRelations(int eventId)
       return;
      }
 
-   string infoString = "";
+   string infoString = "E-" + IntegerToString(eventId) + "\n\n";
 
    while(DatabaseRead(stmt))
      {
@@ -1174,12 +1251,10 @@ void RenderEvent(const structEvent &ev)
 
    r.style      = STYLE_SOLID;
 
-   string tip = "P-" + IntegerToString(ev.patternId) + " " +
-                TimeFrameToString(ev.patternTF) + " " +
-                EnumToString(ev.patternType)+ " " +
-                EnumToString(ev.eventReason);
+   string label = "E-" + IntegerToString(ev.eventId) + " " + " P-" + IntegerToString(ev.patternId);
 
-   r.tooltip    = tip;
+   r.text       = label;
+   r.tooltip    = label;
 
    renderQueue.Add(r);
    return ;
@@ -1324,7 +1399,7 @@ void RenderSomeEventsVisible(int patternId)
    if(stmt == INVALID_HANDLE)
       return;
 
-   string infoString  = "";
+   string infoString  = "P-" + IntegerToString(patternId) + "\n\n";
    while(DatabaseRead(stmt))
      {
       int eventId;

@@ -446,6 +446,13 @@ public:
                p.temp.isPostBreakRetestTouching = true;
 
                EmitEvent(p, IS_POSTBREAK_RETEST_TOUCHED, t.time, t.last);
+
+               // ab hier bestaetigungswuerdig: echter oder Fake-BackBreak wird beim
+               // naechsten M3-Bar-Close geklaert (ClearBrokenButNotConfirmed). Arm nur
+               // bei einem FRISCHEN Retest-Touch (nicht bei jedem Tick oberhalb start) -
+               // sonst feuert IS_POSTBREAK_RETEST_FAKE_BREAK jeden Bar neu, solange der
+               // Kurs irgendwo zwischen start und nominal verharrt.
+               p.temp.postBreakRetestBrokenButNotConfirmed = true;
               }
 
             // ExtremAfterBreak aktualisieren
@@ -457,12 +464,6 @@ public:
 
                if(newExtreme)
                   p.dynamic.priceExtremeAfterBreak = t.last;
-              }
-
-            //   but not confirmed
-            if(distStart > 0)
-              {
-               p.temp.postBreakRetestBrokenButNotConfirmed = true;
               }
            }
         }
