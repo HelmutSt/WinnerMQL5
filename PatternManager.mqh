@@ -1191,6 +1191,9 @@ public:
       if(p.core.type == DREIER || p.core.type == HAMMER_BAR)
          p.dynamic.sequenceSinceStartOfMove = prev.dynamic.sequenceSinceStartOfMove  + 1;
 
+      // Referenzwert fuer previousExtremeBeforeBreakPriceRelation (siehe UpdateExtremeBeforeBreak)
+      p.dynamic.priceExtremePrevious = prev.dynamic.priceExtremeBeforeBreak;
+
       // ---------------------------------------------------------
       // 2. previousStartPriceRelation
       // ---------------------------------------------------------
