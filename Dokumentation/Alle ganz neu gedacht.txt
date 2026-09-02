@@ -1,0 +1,54 @@
+Erstmal im Fliesstext:
+
+Objecte 
+H1/M3-DREIER-CREATE - 
+Stage 1 - Handel läuft 3 Bars in eine Richtung = Stärke wenn im Trend - Hier wird eine Richtung aufgebaut. 
+ 
+H1/M3-DREIER-TOUCHED dann Move 
+Stage 1 - Käufer haben korrektur abgewartet und steigen wieder ein - 
+
+M3-DREIER-TOUCHED - nach Move vom CREATE oder vom Fake weg ist der DREIER das Ziel der Korrektur
+Stage 2 - M3 - Man kann LIMIT Kaufen wenn der Kontext stimmt.
+
+M3-DREIER-FAKE
+Stage 1 - Käufer haben Volumen abgesaugt und positions aufzubauen . Sehr starker Richtungsimpuls. 
+
+M3-DREIER ist größer/höher als Vorgänger 
+Stage 1 - Käufer haben neue Preise gemacht - gutes Signal
+
+M3-DREIER bricht den darüberliegenden Opposite
+Stage 1 - Käufer haben den Wiederstande der VK gebrochen - starkes Signal
+          Sehr stark wenn Trend gebrochen. 
+	  Sehr starke wenn SoM-Dreier gebrochen
+
+H1/M3-DREIER beginnt mit Hammer 
+Stage 1 - starkes Signal
+
+H1/M3-DREIER gebrochen  
+Stage 1 - Käufer überstimmen verkäufer und vs. Stärke
+
+M3-DREIER gebrochen  
+Stage 2 - Verteigigunslinie fällt - oft beginn einre schnellen bewegung - Stop order 
+
+M3/M1 Hammer - Create
+Stage 1 - Umkehr
+Stage 2 - stop Order - Abhängig vom Kontext z.B. nahe vor wichtiger Marke.
+
+H1-DREIER in der Nähe
+Stage 1 - Zieht den Kurs weil als ziel gesehen
+
+H1/M3 - Tangenten
+Stage 1 - Kurs in der Nähe einer lange Tangente (Anzahl BArs) gibt eine RIchtung vor
+Stage 1 - Zieht den Kurs an weil dort drehung erwartet wird 
+
+M3 - Tangenten
+Stage 2 - LImit (ex. "Limit an der Flagge")
+
+H1/M3-Konter
+Stage 1 - zieht weil dort wird drehung erwartet.
+
+M3-Konter
+Stage 2 - LImit order.
+
+Alle Trends ud Trendbrüche
+Stage 1
