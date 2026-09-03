@@ -144,14 +144,21 @@ public:
       string eventTypeStr = TimeFrameToString(ev.patternTF) + "_" +
                             EnumToString(ev.patternType) + "_" +
                             EnumToString(ev.eventReason);
+      structPattern p = patternManager.Get(ev.patternId);
+
       // prüfen ob ...
       ev.isEntryEvent = EventShouldCreateTrades(eventTypeStr);
+
+      // TEST HYP4-Formation: nur 1. Touch eines M3-DREIER, das waehrend der
+      // Formation eines gleichgerichteten H1-DREIER entstanden ist
+      // (h1FormationParentId != -1, siehe SetCommonPatternFields)
+      if(ev.isEntryEvent && (p.dynamic.touches != 1 || p.core.h1FormationParentId == -1))
+         ev.isEntryEvent = false;
 
       // 1. Event schreiben (für AuslösendeEvents UND für StoryEvents)
       DBExecute(__FUNCTION__, ev.ToSQL());
 
       // 2. PatternDynamic at Event schreiben
-      structPattern p = patternManager.Get(ev.patternId);
       DBExecute(__FUNCTION__, p.dynamic.ToSQL(ev.patternId, ev.eventId));
 
       if(!ev.isEntryEvent)   // weiter nur wenn ENTRY

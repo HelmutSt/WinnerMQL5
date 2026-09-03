@@ -524,6 +524,9 @@ struct structPatternCore
 
    double            patternStrengthAtCreate;       // Stärke des Patterns zum Erstellungszeitpunkt (Score für KI)
 
+   int               h1FormationParentId;           // nur M3-DREIER: patternId des gleichgerichteten H1-DREIER, waehrend
+                                                      // dessen Formation dieses M3-Pattern entstand (-1 = keiner)
+
    // ---------------------------------------------------------
    // Init
    // ---------------------------------------------------------
@@ -574,6 +577,8 @@ struct structPatternCore
       wickRatio                        = 0.0;
 
       patternStrengthAtCreate          = 0.0;
+
+      h1FormationParentId              = -1;
      }
 
    // ---------------------------------------------------------
@@ -594,7 +599,7 @@ struct structPatternCore
                 "direction, sessionAtCreate, trendContextAtCreate, "
                 "shapeBarA, shapeBarB, shapeBarC, "
                 "rangeBarA, rangeBarB, rangeBarC, "
-                "wickRatio, patternStrengthAtCreate"
+                "wickRatio, patternStrengthAtCreate, h1FormationParentId"
                 ") VALUES ("
                 "%d, '%s', '%s', %I64d, %I64d, "
                 "%I64d, "
@@ -607,7 +612,8 @@ struct structPatternCore
                 "'%s', '%s', '%s', "
                 "'%s', '%s', '%s', "
                 "%.5f, %.5f, %.5f, "
-                "%.5f, %.5f"
+                "%.5f, %.5f, "
+                "%d"
                 ");",
                 patternId,
                 TimeFrameToString(timeFrame),
@@ -625,7 +631,8 @@ struct structPatternCore
                 EnumToString(trendContextAtCreate),
                 EnumToString(shapeBarA), EnumToString(shapeBarB), EnumToString(shapeBarC),
                 rangeBarA, rangeBarB, rangeBarC,
-                wickRatio, patternStrengthAtCreate
+                wickRatio, patternStrengthAtCreate,
+                h1FormationParentId
              );
      }
 
@@ -666,7 +673,8 @@ struct structPatternCore
          "rangeBarB REAL,"
          "rangeBarC REAL,"
          "wickRatio REAL,"
-         "patternStrengthAtCreate REAL"
+         "patternStrengthAtCreate REAL,"
+         "h1FormationParentId INTEGER DEFAULT -1"
          ");";
      }
 
@@ -746,6 +754,8 @@ struct structPatternCore
       DatabaseColumnDouble(stmt, 29, wickRatio);
 
       DatabaseColumnDouble(stmt, 30, patternStrengthAtCreate);
+
+      DatabaseColumnInteger(stmt, 31, h1FormationParentId);
 
       return true;
      }

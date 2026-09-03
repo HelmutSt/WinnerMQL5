@@ -1156,6 +1156,35 @@ public:
       p.core.patternStrengthAtCreate = 0; // wird unten via ComputePatternStrength(p) befüllt
 
       // ---------------------------------------------------------
+      // h1FormationParentId: fuer M3-DREIER pruefen, ob es waehrend der
+      // Formation eines gleichgerichteten H1-DREIER entstanden ist
+      // (raeumlich in dessen Zone, zeitlich in [H1.startTime, H1.validFrom]).
+      // Bei Entstehung endgueltig feststehend, kein Lookahead.
+      // ---------------------------------------------------------
+      p.core.h1FormationParentId = -1;
+      if(p.core.type == DREIER && p.core.timeFrame == PERIOD_M3)
+        {
+         for(int h = patternCount - 1; h >= 0; h--)
+           {
+            if(patterns[h].core.timeFrame != PERIOD_H1)
+               continue;
+            if(patterns[h].core.type != DREIER)
+               continue;
+            if(patterns[h].core.direction != p.core.direction)
+               continue;
+            if(p.core.startTime < patterns[h].core.startTime ||
+               p.core.startTime > patterns[h].core.validFrom)
+               continue;
+            if(p.core.priceLow < patterns[h].core.priceLow ||
+               p.core.priceHigh > patterns[h].core.priceHigh)
+               continue;
+
+            p.core.h1FormationParentId = patterns[h].core.patternId;
+            break;
+           }
+        }
+
+      // ---------------------------------------------------------
       // 1. Vorgänger suchen (rückwärts, zeitlich sortiertes Array)
       // ---------------------------------------------------------
       bool found = false;
