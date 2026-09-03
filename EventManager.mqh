@@ -110,7 +110,7 @@ public:
       // VRR_Add("M1_HAMMER_IS_BAR_BREAK       STOP    X      -      1     10      50,70,100    10         -           -  ");
 
       //          M3 DREIER
-      VRR_Add("M3_DREIER_IS_TOUCHED         LIMIT   -      -      1     10       30           10         -           -  ");
+      VRR_Add("M3_DREIER_IS_TOUCHED         LIMIT   -      -      1     10       30,0         10         -           -  ");
       VRR_Add("M3_DREIER_IS_POSTBREAK_RETEST_TOUCHED  LIMIT   -      -      1     10       30           10         -           -  ");   // HYP2
       // VRR_Add("M3_DREIER_IS_FAKE_BREAK      TRAIL   -      -      1     10       50,70,100    10         -           -  ");
       // VRR_Add("M3_DREIER_IS_BROKEN          LIMIT   X      -      1     10       50,70,100    10         -           -  ");
@@ -503,7 +503,10 @@ private:
                         structVariant v;
                         v.Init();
 
-                        v.variantId    = ComputeVariantId(rule.vrrId, d, s, t, trail, ab);
+                        v.variantId    = ComputeVariantId(rule.vrrId,
+                                             (int)rule.deltaList[d], (int)rule.slList[s],
+                                             (int)rule.tpList[t], (int)rule.trailingList[trail],
+                                             rule.abortBarsList[ab]);
                         v.orderType    = rule.orderType;
                         v.against      = rule.against;
                         v.twoUnitMode  = rule.twoUnitMode;
@@ -527,7 +530,10 @@ private:
 
       // technische ID (AUTOINCREMENT in DB, aber intern vergeben wir sie trotzdem)
       tr.tradeId      = nextTradeId++;
-      tr.variantId    = ComputeVariantId(rule.vrrId, d, s, t, trail, ab);
+      tr.variantId    = ComputeVariantId(rule.vrrId,
+                                          (int)rule.deltaList[d], (int)rule.slList[s],
+                                          (int)rule.tpList[t], (int)rule.trailingList[trail],
+                                          rule.abortBarsList[ab]);
       tr.eventId      = ev.eventId;
 
       tr.orderType    = rule.orderType;

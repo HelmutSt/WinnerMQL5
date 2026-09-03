@@ -69,6 +69,19 @@ public:
                trades[i].mfe = diff;
                trades[i].mfeTime = t.time;
                trades[i].mfeBarIndex =  engine.market.barIndexM3;
+
+               // TRAILING-SL: bei tpPoints==0 (Trailing-Modus) SL 'trailingDist' Punkte
+               // hinter dem neuen mfe-Hoch nachziehen (nur verschaerfen, nie lockern)
+               if(trades[i].tpPoints == 0 && trades[i].status == TRADE_RUNNING)
+                 {
+                  double newSL = trades[i].fillPrice +
+                                 (trades[i].mfe - trades[i].trailingDist) * trades[i].direction;
+
+                  if(trades[i].direction == LONG  && newSL > trades[i].currentSLPrice)
+                     trades[i].currentSLPrice = newSL;
+                  if(trades[i].direction == SHORT && newSL < trades[i].currentSLPrice)
+                     trades[i].currentSLPrice = newSL;
+                 }
               }
             if(-diff >= trades[i].slPoints)
                trades[i].mfeActive = false;
@@ -312,10 +325,12 @@ private:
 
       // -------------------------
       // TP1 wird gesetzOutt, wenn currentTPPrice erreicht wird
+      // tpPoints==0 = Trailing-Modus (kein TP, siehe currentSLPrice-Nachziehen im mfe-Update)
       // -------------------------
 
-      if((tr.direction == LONG  && t.last >= tr.currentTPPrice) ||
-         (tr.direction == SHORT && t.last <= tr.currentTPPrice))
+      if(tr.tpPoints > 0 &&
+         ((tr.direction == LONG  && t.last >= tr.currentTPPrice) ||
+          (tr.direction == SHORT && t.last <= tr.currentTPPrice)))
         {
          tr.exitReason = EXIT_TP;
          tr.exitPrice  = tr.currentTPPrice;

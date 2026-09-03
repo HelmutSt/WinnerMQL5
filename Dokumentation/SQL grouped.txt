@@ -19,6 +19,17 @@ PRAGMA table_info(relations);
 PRAGMA table_info(patternCore);
 PRAGMA table_info(patternDynamic);
 
+
+-- was ist geladen
+SELECT
+    MIN(eventTime) AS aeltestesEventTime,
+    datetime(MIN(eventTime), 'unixepoch') AS aeltestesDatum,
+    MAX(eventTime) AS neuestesEventTime,
+    datetime(MAX(eventTime), 'unixepoch') AS neuestesDatum,
+    COUNT(*) AS anzahlEvents
+FROM events;
+
+
 -- anzahl records
 SELECT 'patternCore'  AS tab, COUNT(*) AS cnt
 FROM patternCore UNION
