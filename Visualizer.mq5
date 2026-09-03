@@ -349,6 +349,7 @@ void LoadAndRenderPatterns()
    string sqlCore =
       "SELECT * "
       "FROM patternCore "
+      "WHERE type <> 'HAMMER_BAR' "
       "ORDER BY patternId;";
 
    int stmtCore = DatabasePrepare(db, sqlCore);
@@ -418,9 +419,14 @@ void LoadAndRenderPatterns()
 void LoadAndRenderEvents()
   {
    string sql =
-      "SELECT * "
-      "FROM events WHERE patternId > -1    "
-      "ORDER BY eventId;";
+      "SELECT e.*, "
+      "CASE WHEN t.eventId IS NULL THEN 0 ELSE 1 END AS has_trade, "
+      "IFNULL(t.profit, 0) AS trade_profit "
+      "FROM events e "
+      "LEFT JOIN trades t ON t.eventId = e.eventId "
+      "WHERE e.isEntryEvent = 1 AND e.patternId > -1 "
+      "AND e.patternType <> 'HAMMER_BAR' "
+      "ORDER BY e.eventId;";
 
    int stmt = DatabasePrepare(db, sql);
    if(stmt == INVALID_HANDLE)
@@ -433,7 +439,13 @@ void LoadAndRenderEvents()
      {
       structEvent ev;
       ev.LoadFromSQL(stmt);
-      RenderEvent(ev);        // ChartObject erzeugen
+
+      int hasTrade;
+      double tradeProfit;
+      DatabaseColumnInteger(stmt, 10, hasTrade);
+      DatabaseColumnDouble(stmt, 11, tradeProfit);
+
+      RenderEvent(ev, hasTrade != 0, tradeProfit);        // ChartObject erzeugen
      }
 
    DatabaseFinalize(stmt);
@@ -1346,7 +1358,7 @@ void RenderStartOfMove(const structPatternCore &pc)
 //+------------------------------------------------------------------+
 //|                                                                  |
 //+------------------------------------------------------------------+
-void RenderEvent(const structEvent &ev)
+void RenderEvent(const structEvent &ev, const bool hasTrade, const double tradeProfit)
   {
 
    RenderRequest r;
@@ -1380,13 +1392,10 @@ void RenderEvent(const structEvent &ev)
      }
 
    r.clr        = clrDarkGray;
-   r.width      = 2;
+   r.width      = 3;
 
-   if(ev.isEntryEvent)
-     {
-      r.clr        = (ev.patternDirection == LONG ? clrLimeGreen : clrRed);
-      r.width      = 3;
-     }
+   if(hasTrade)
+      r.clr = (tradeProfit > 0 ? clrLimeGreen : (tradeProfit < 0 ? clrRed : clrDarkGray));
 
    r.style      = STYLE_SOLID;
 

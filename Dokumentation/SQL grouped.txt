@@ -1,0 +1,164 @@
+Offene Punkte
+-------------------
+kurs sprung auf nearTouched touched
+wie no newarTouched wenn Touched
+wann pattern closed . . .
+pattern lösen pattern ab - schliessen?
+index nach SoMove setzen.
+neartouched wenn tick . . . 
+----------------------------------------
+
+.headers on
+.mode column
+SELECT name FROM sqlite_master WHERE type='table';
+
+PRAGMA table_info(trades);
+PRAGMA table_info(events);
+PRAGMA table_info(market);
+PRAGMA table_info(relations); 
+PRAGMA table_info(patternCore);
+PRAGMA table_info(patternDynamic);
+
+-- anzahl records
+SELECT 'patternCore'  AS tab, COUNT(*) AS cnt
+FROM patternCore UNION
+SELECT 'patternDynamic' AS tab, COUNT(*) AS cnt
+FROM patternDynamic UNION 
+SELECT 'events' AS tab, COUNT(*) AS cnt
+FROM events UNION 
+SELECT 'relations' AS tab, COUNT(*) AS cnt
+FROM relations UNION 
+SELECT 'trades' AS tab, COUNT(*) AS cnt
+FROM trades UNION 
+SELECT 'trends' AS tab, COUNT(*) AS cnt
+FROM trends;
+
+-- pattern typen   
+SELECT type,timeframe, COUNT(*) AS cnt
+FROM patternCore
+GROUP BY type, timeframe
+ORDER BY type, timeframe;
+
+-- events
+SELECT patternTF, patternType, eventReason,  isEntryEvent , count(*) as cnt
+FROM events
+GROUP BY patternTF, patternType, eventReason,  isEntryEvent   
+Order by patternTF, patternType, eventReason,  isEntryEvent ;
+
+-- relations
+select  slotName, isOriginPattern , count(*) as cnt
+from relations
+Group by slotname, isOriginPattern  
+Order by slotname, isOriginPattern ;
+
+-- alle relations
+select  eventId , patternId,slotName,isOriginPattern                 
+from relations
+Order by eventId, slotname;
+
+
+-- alle pattern
+SELECT 
+    patternId,timeframe, type, 
+    datetime(startTime, 'unixepoch') AS startReadable,
+    priceLow,
+    datetime(endTime, 'unixepoch') AS endReadable, priceHigh, 
+  priceSlopePerBar      
+FROM patternCore
+WHERE type = 'TANGENTE'
+ORDER BY patternId;
+
+
+select tradeId, variantId,eventId,direction, status,
+fillPrice, datetime(filltime, 'unixepoch') as fillTime   , 
+exitPrice, datetime(exitTime, 'unixepoch') as exitTime,
+profit 
+from trades 
+where eventId = 371 
+order by eventId  ;
+---
+SELECT count(*) cnt 
+
+
+SELECT events.eventId, events.patternType, events.patternTF, events.eventReason, patternDynamic.causedOppositePatternBreak, 
+trades.status, trades.exitReason, trades.profit
+
+
+    sqrt(AVG(MAE * MAE) - AVG(MAE) * AVG(MAE)) AS stddev_mae,
+    sqrt(AVG(MFE * MFE) - AVG(MFE) * AVG(MFE)) AS stddev_mfe
+
+
+count(*) cnt 
+
+SELECT   exitReason, count(*) cnt, 
+AVG(Profit) as avgProfit,
+AVG(MAE) as avgMae,
+sqrt(AVG(MAE * MAE) - AVG(MAE) * AVG(MAE)) AS stDevMae,
+AVG(MFE) as AvgMfe, 
+sqrt(AVG(MFE * MFE) - AVG(MFE) * AVG(MFE)) AS stDevMfe
+
+FROM events
+JOIN patternDynamic ON patternDynamic.eventId = events.eventId
+JOIN trades ON trades.eventId = events.eventId
+WHERE events.patternType = 'DREIER'
+  AND events.patternTF = 'M3'
+  AND events.eventReason = 'IS_TOUCHED'
+  AND patternDynamic.causedOppositePatternBreak = 1
+GROUP  by exitReason;
+
+---
+ 
+
+---
+SELECT
+    pc.type                                AS pattern_type,
+    pd.status                              AS pattern_status,
+    pd.touches,
+    pd.isTrendBreak,
+    pd.isStartOfMove,
+    pd.sequenceSinceStartOfMove,
+    pd.causedOppositePatternBreak,
+    e.eventId,
+m.sessionPhase,
+m.session,
+    r.slotName,
+    r.isOriginPattern,
+    t.eventId,
+    t.barsWaitedForFill,
+    t.barsHeldUntilExit,
+    t.exitReason,
+    t.profit,
+    t.mae,
+    t.mfe
+FROM trades t
+JOIN events e
+    ON t.eventId = e.eventId
+JOIN market m
+    ON t.eventId = m.eventId
+JOIN relations r
+    ON t.eventId = r.eventId
+LEFT JOIN patternDynamic pd
+    ON r.patternId = pd.patternId and r.eventId = pd.eventId
+LEFT JOIN patternCore pc
+    ON e.patternId = pc.patternId
+WHERE r.isOriginPattern < 3   
+ORDER BY t.eventId
+limit 10;
+---
+SELECT
+m.session,
+count(*),
+sum(t.profit)
+FROM trades t
+JOIN events e
+    ON t.eventId = e.eventId
+JOIN market m
+    ON t.eventId = m.eventId
+JOIN relations r
+    ON t.eventId = r.eventId
+LEFT JOIN patternDynamic pd
+    ON r.patternId = pd.patternId and r.eventId = pd.eventId
+LEFT JOIN patternCore pc
+    ON e.patternId = pc.patternId
+WHERE r.isOriginPattern < 3   
+ORDER BY m.session;
