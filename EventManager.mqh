@@ -110,8 +110,8 @@ public:
       // VRR_Add("M1_HAMMER_IS_BAR_BREAK       STOP    X      -      1     10      50,70,100    10         -           -  ");
 
       //          M3 DREIER
-      VRR_Add("M3_DREIER_IS_TOUCHED         LIMIT   -      -      1     10       30,0         10         -           -  ");
-      VRR_Add("M3_DREIER_IS_POSTBREAK_RETEST_TOUCHED  LIMIT   -      -      1     10       30           10         -           -  ");   // HYP2
+      VRR_Add("M3_DREIER_IS_TOUCHED         LIMIT   -      -      1     10       30         10         -           -  ");
+      // VRR_Add("M3_DREIER_IS_POSTBREAK_RETEST_TOUCHED  LIMIT   -      -      1     10       30           10         -           -  ");   // HYP2
       // VRR_Add("M3_DREIER_IS_FAKE_BREAK      TRAIL   -      -      1     10       50,70,100    10         -           -  ");
       // VRR_Add("M3_DREIER_IS_BROKEN          LIMIT   X      -      1     10       50,70,100    10         -           -  ");
       // VRR_Add("M3_DREIER_IS_RETOUCHED       LIMIT   X      -      1     10       50,70,100    10         -           -  ");
@@ -150,9 +150,12 @@ public:
       ev.isEntryEvent = EventShouldCreateTrades(eventTypeStr);
 
       // TEST HYP4-Formation: nur 1. Touch eines M3-DREIER, das waehrend der
-      // Formation eines gleichgerichteten H1-DREIER entstanden ist
-      // (h1FormationParentId != -1, siehe SetCommonPatternFields)
-      if(ev.isEntryEvent && (p.dynamic.touches != 1 || p.core.h1FormationParentId == -1))
+      // Formation eines gleichgerichteten H1-DREIER entstanden ist.
+      // Live-Scan zum Touch-Zeitpunkt (HasH1FormationParent), NICHT das bei
+      // M3-Erzeugung eingefrorene h1FormationParentId-Feld - der H1-DREIER
+      // ist bei M3-Erzeugung oft noch gar nicht in patterns[] eingetragen.
+      if(ev.isEntryEvent &&
+         (p.dynamic.touches != 1 || !patternManager.HasH1FormationParent(p.core)))
          ev.isEntryEvent = false;
 
       // 1. Event schreiben (für AuslösendeEvents UND für StoryEvents)

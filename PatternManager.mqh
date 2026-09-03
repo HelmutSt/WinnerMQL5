@@ -146,6 +146,35 @@ public:
      {
       return patterns[idx];
      }
+   // ---------------------------------------------------------------
+   // Live-Scan (zum Event-Zeitpunkt, NICHT bei Pattern-Erzeugung eingefroren):
+   // gibt es einen gleichgerichteten H1-DREIER, in dessen Formationsfenster
+   // (startTime..validFrom) und Preiszone dieses M3-Pattern entstanden ist?
+   // Muss zum Touch-Zeitpunkt laufen, nicht bei M3-Erzeugung - der H1-DREIER
+   // wird erst bei seiner eigenen validFrom (Formationsende) in patterns[]
+   // eingetragen, existiert also bei M3-Erzeugung oft noch gar nicht.
+   // ---------------------------------------------------------------
+   bool              HasH1FormationParent(const structPatternCore &m3core)
+     {
+      for(int h = patternCount - 1; h >= 0; h--)
+        {
+         if(patterns[h].core.timeFrame != PERIOD_H1)
+            continue;
+         if(patterns[h].core.type != DREIER)
+            continue;
+         if(patterns[h].core.direction != m3core.direction)
+            continue;
+         if(m3core.startTime < patterns[h].core.startTime ||
+            m3core.startTime > patterns[h].core.validFrom)
+            continue;
+         if(m3core.priceLow < patterns[h].core.priceLow ||
+            m3core.priceHigh > patterns[h].core.priceHigh)
+            continue;
+
+         return true;
+        }
+      return false;
+     }
 
    // ###########################################################################
    // #########################  EVENT EMITTER  #################################
