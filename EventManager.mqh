@@ -110,8 +110,8 @@ public:
       // VRR_Add("M1_HAMMER_IS_BAR_BREAK       STOP    X      -      1     10      50,70,100    10         -           -  ");
 
       //          M3 DREIER
-      VRR_Add("M3_DREIER_IS_TOUCHED         LIMIT   -      -      1     10       30         10         -           -  ");
-      // VRR_Add("M3_DREIER_IS_POSTBREAK_RETEST_TOUCHED  LIMIT   -      -      1     10       30           10         -           -  ");   // HYP2
+      VRR_Add("M3_DREIER_IS_TOUCHED                   LIMIT   -      -      1     10,20       30         0         -           -  ");
+      VRR_Add("M3_DREIER_IS_POSTBREAK_RETEST_TOUCHED  LIMIT   -      -      1     10,20       30         0         -           -  ");   // HYP2
       // VRR_Add("M3_DREIER_IS_FAKE_BREAK      TRAIL   -      -      1     10       50,70,100    10         -           -  ");
       // VRR_Add("M3_DREIER_IS_BROKEN          LIMIT   X      -      1     10       50,70,100    10         -           -  ");
       // VRR_Add("M3_DREIER_IS_RETOUCHED       LIMIT   X      -      1     10       50,70,100    10         -           -  ");
@@ -154,8 +154,16 @@ public:
       // Live-Scan zum Touch-Zeitpunkt (HasH1FormationParent), NICHT das bei
       // M3-Erzeugung eingefrorene h1FormationParentId-Feld - der H1-DREIER
       // ist bei M3-Erzeugung oft noch gar nicht in patterns[] eingetragen.
+      // IS_POSTBREAK_RETEST_TOUCHED (HYP2) wird als Erweiterung von HYP4
+      // behandelt: gleiche H1-Formation-Bedingung, aber der "1. Touch"-Zaehler
+      // muss postBreakRetestTouches sein (der Retest-Zaehler nach dem Bruch),
+      // nicht touches (der Vorbruch-Zaehler) - sonst wird das falsche Feld geprueft.
+      int touchCountForEntry = (ev.eventReason == IS_POSTBREAK_RETEST_TOUCHED)
+                                ? p.dynamic.postBreakRetestTouches
+                                : p.dynamic.touches;
+
       if(ev.isEntryEvent &&
-         (p.dynamic.touches != 1 || !patternManager.HasH1FormationParent(p.core)))
+         (touchCountForEntry != 1 || !patternManager.HasH1FormationParent(p.core)))
          ev.isEntryEvent = false;
 
       // 1. Event schreiben (für AuslösendeEvents UND für StoryEvents)
