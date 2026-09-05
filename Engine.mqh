@@ -101,12 +101,6 @@ public:
 
       Print("✅ FDAX.db erfolgreich geöffnet.");
 
-      if(!DBExecute(__FUNCTION__,sql_create_view))
-        {
-         Print("SQL CREATE VIEW  failed: ", sql_create_view);
-         return false;
-        }
-
       // Reihenfolge wegen FK-Abhängigkeiten
       const string drop_sql[]
       =
@@ -157,12 +151,6 @@ public:
             Print("DB CREATE failed: ", create_sql[i]);
             return false;
            }
-        }
-
-      if(!DBExecute(__FUNCTION__,sql_create_view))
-        {
-         Print("SQL CREATE VIEW  failed: ", sql_create_view);
-         return false;
         }
 
       Print(__FUNCTION__ + " --- DataBaseRebuild finished ---");
