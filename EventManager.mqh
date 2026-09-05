@@ -146,7 +146,7 @@ public:
                             EnumToString(ev.eventReason);
       structPattern p = patternManager.Get(ev.patternId);
 
-      // prüfen ob ...
+      // 1. prüfen ob ...
       ev.isEntryEvent = EventShouldCreateTrades(eventTypeStr);
 
       // TEST HYP4-Formation: nur 1. Touch eines M3-DREIER, das waehrend der
@@ -166,10 +166,10 @@ public:
          (touchCountForEntry != 1 || !patternManager.HasH1FormationParent(p.core)))
          ev.isEntryEvent = false;
 
-      // 1. Event schreiben (für AuslösendeEvents UND für StoryEvents)
+      // 2. Event schreiben (für AuslösendeEvents UND für StoryEvents)
       DBExecute(__FUNCTION__, ev.ToSQL());
 
-      // 2. PatternDynamic at Event schreiben
+      // 3. PatternDynamic at Event schreiben
       DBExecute(__FUNCTION__, p.dynamic.ToSQL(ev.patternId, ev.eventId));
 
       if(!ev.isEntryEvent)   // weiter nur wenn ENTRY
@@ -182,7 +182,7 @@ public:
       BuildRelationsListForEvent(ev);
       FillRelationsListForEvent(ev);
       
-      // 4. Trades
+      // 6. Trades
       GenerateTradesForEvent(ev);
 
      };
